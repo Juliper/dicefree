@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Dicefree – simpler Würfel-Roller ohne Account. Daten bleiben bei dir, Import/Export als JSON.">
+  <meta name="theme-color" content="#14161c">
+  <title>Dicefree</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎲</text></svg>">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Dicefree</h1>
+    <div class="topbar-actions">
+      <button type="button" class="ghost" id="export-btn">Export</button>
+      <label class="ghost button-like" for="import-input">Import</label>
+      <input type="file" id="import-input" accept="application/json,.json" hidden>
+    </div>
+  </header>
+
+  <main>
+    <section class="result" aria-live="polite">
+      <div class="result-label" id="result-label">Wähle einen Würfel</div>
+      <div class="result-total" id="result-total">–</div>
+      <div class="result-detail" id="result-detail"></div>
+    </section>
+
+    <section class="controls">
+      <div class="stepper">
+        <span class="stepper-label">Anzahl</span>
+        <button type="button" data-step="count" data-delta="-1" aria-label="Anzahl verringern">−</button>
+        <output id="count-value">1</output>
+        <button type="button" data-step="count" data-delta="1" aria-label="Anzahl erhöhen">+</button>
+      </div>
+      <div class="stepper">
+        <span class="stepper-label">Modifikator</span>
+        <button type="button" data-step="modifier" data-delta="-1" aria-label="Modifikator verringern">−</button>
+        <output id="modifier-value">+0</output>
+        <button type="button" data-step="modifier" data-delta="1" aria-label="Modifikator erhöhen">+</button>
+      </div>
+    </section>
+
+    <section class="dice" id="dice-grid" aria-label="Würfel"></section>
+
+    <section class="history">
+      <div class="history-head">
+        <h2>Verlauf</h2>
+        <button type="button" class="ghost small" id="clear-btn">Leeren</button>
+      </div>
+      <ol id="history-list"></ol>
+      <p class="hint" id="history-empty">Noch keine Würfe. Nichts wird gespeichert – nutze Export, um deine Daten mitzunehmen.</p>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
