@@ -38,7 +38,7 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-button, .button-like {
+button, label.ghost {
   font: inherit;
   color: inherit;
   cursor: pointer;
@@ -109,7 +109,7 @@ main {
 }
 .result.crit .result-total { color: var(--crit); }
 .result.fumble .result-total { color: var(--fumble); }
-.result.pop .result-total { animation: pop 180ms ease-out; }
+.result-total.pop { animation: pop 180ms ease-out; }
 
 @keyframes pop {
   from { transform: scale(0.85); opacity: 0.4; }
@@ -117,7 +117,7 @@ main {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .result.pop .result-total { animation: none; }
+  .result-total.pop { animation: none; }
 }
 
 /* Controls */
@@ -183,7 +183,7 @@ main {
   justify-content: space-between;
 }
 .history h2 { font-size: 1rem; margin: 0; }
-#history-list {
+.history ol {
   list-style: none;
   margin: 8px 0 0;
   padding: 0;
@@ -191,7 +191,7 @@ main {
   flex-direction: column;
   gap: 6px;
 }
-#history-list li {
+.history li {
   display: flex;
   justify-content: space-between;
   gap: 12px;
@@ -201,8 +201,8 @@ main {
   padding: 8px 12px;
   font-variant-numeric: tabular-nums;
 }
-#history-list .h-expr { color: var(--muted); }
-#history-list .h-total { font-weight: 700; }
+.history .h-expr { color: var(--muted); }
+.history .h-total { font-weight: 700; }
 .hint { color: var(--muted); font-size: 0.85rem; }
 
 @media (max-width: 360px) {
