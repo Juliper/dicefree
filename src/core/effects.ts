@@ -276,7 +276,7 @@ export function buildRoll(
     mode: a.mode,
     bonusDice: a.bonusDice,
     flats: a.flats,
-    notes: a.notes,
+    notes: [...(base.notes ?? []), ...a.notes],
     autoFail: a.autoFail,
   };
 }

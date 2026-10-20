@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { roll } from "./dice";
+import { newCharacter } from "./character";
 import { HISTORY_MAX, adjustPool, emptySession, fromFile, fromStored, makePreset, toFile, toStored, type Session } from "./session";
 
 describe("adjustPool", () => {
@@ -142,5 +143,24 @@ describe("presets with roll kinds", () => {
   it("drops unknown effects and clamps effect levels on import", () => {
     const s = fromFile({ format: "dicefree", settings: { effects: { bless: 1, exhaustion: 9, nonsense: 1, poisoned: 0 } } });
     expect(s.effects).toEqual({ bless: 1, exhaustion: 5 });
+  });
+});
+
+describe("characters in the session", () => {
+  it("round-trips characters and keeps the active one", () => {
+    const a = newCharacter("Aria");
+    const b = newCharacter("Borin");
+    const s: Session = { ...emptySession(), view: "character", characters: [a, b], activeCharacterId: b.id };
+    const back = fromStored(JSON.parse(JSON.stringify(toStored(s))));
+    expect(back.characters).toEqual([a, b]);
+    expect(back.activeCharacterId).toBe(b.id);
+    expect(back.view).toBe("character");
+  });
+
+  it("falls back to the first character when the active id is unknown", () => {
+    const a = newCharacter("Aria");
+    const s = fromFile({ format: "dicefree", settings: { activeCharacterId: "gone" }, characters: [a, { nope: 1 }] });
+    expect(s.characters).toEqual([a]);
+    expect(s.activeCharacterId).toBe(a.id);
   });
 });

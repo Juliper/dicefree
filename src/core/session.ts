@@ -10,6 +10,7 @@ import {
   type RollResult,
 } from "./dice";
 import { parseActiveEffects, type ActiveEffects } from "./effects";
+import { parseCharacter, type Character } from "./character";
 
 export const LIMITS = {
   groupCount: [0, 50],
@@ -21,7 +22,8 @@ export const PRESETS_MAX = 50;
 export const PRESET_NAME_MAX = 40;
 
 const FORMAT = "dicefree";
-const VERSION = 4;
+const VERSION = 5;
+export const CHARACTERS_MAX = 20;
 
 export const ROLL_KINDS: readonly RollKind[] = ["free", "attack", "check", "save", "damage"];
 const isKind = (k: unknown): k is RollKind => ROLL_KINDS.includes(k as RollKind);
@@ -47,8 +49,13 @@ export interface Settings {
   effects: ActiveEffects;
 }
 
+export type View = "dice" | "character";
+
 export interface Session extends Settings {
+  view: View;
   presets: Preset[];
+  characters: Character[];
+  activeCharacterId?: string;
   history: RollResult[]; // newest first
 }
 
@@ -56,13 +63,25 @@ export interface SessionFile {
   format: typeof FORMAT;
   version: number;
   exportedAt: string;
-  settings: Settings;
+  settings: Settings & { view: View; activeCharacterId?: string };
   presets: Preset[];
+  characters: Character[];
   history: RollResult[];
 }
 
 export function emptySession(): Session {
-  return { kind: "free", pool: [], modifier: 0, mode: "normal", crit: false, effects: {}, presets: [], history: [] };
+  return {
+    view: "dice",
+    kind: "free",
+    pool: [],
+    modifier: 0,
+    mode: "normal",
+    crit: false,
+    effects: {},
+    presets: [],
+    characters: [],
+    history: [],
+  };
 }
 
 export function clamp(v: number, [min, max]: readonly [number, number]): number {
@@ -98,9 +117,18 @@ export function makePreset(input: PresetInput): Preset | null {
   return p;
 }
 
-function settingsOf(s: Settings): Settings {
-  const out: Settings = { kind: s.kind, pool: s.pool, modifier: s.modifier, mode: s.mode, crit: s.crit, effects: s.effects };
+function settingsOf(s: Session): SessionFile["settings"] {
+  const out: SessionFile["settings"] = {
+    view: s.view,
+    kind: s.kind,
+    pool: s.pool,
+    modifier: s.modifier,
+    mode: s.mode,
+    crit: s.crit,
+    effects: s.effects,
+  };
   if (s.ability) out.ability = s.ability;
+  if (s.activeCharacterId) out.activeCharacterId = s.activeCharacterId;
   return out;
 }
 
@@ -111,6 +139,7 @@ export function toFile(s: Session): SessionFile {
     exportedAt: new Date().toISOString(),
     settings: settingsOf(s),
     presets: s.presets,
+    characters: s.characters,
     history: s.history,
   };
 }
@@ -200,12 +229,21 @@ const parseList = <T>(raw: unknown, parse: (x: unknown) => T | null, max: number
     .filter((x): x is T => x !== null)
     .slice(0, max);
 
-/** Parses an exported file (v1–v4). Throws on foreign files; silently drops malformed entries. */
+/** Parses an exported file (v1–v5). Throws on foreign files; silently drops malformed entries. */
 export function fromFile(raw: unknown): Session {
-  const data = raw as { format?: unknown; settings?: Record<string, unknown>; presets?: unknown; history?: unknown } | null;
+  const data = raw as {
+    format?: unknown;
+    settings?: Record<string, unknown>;
+    presets?: unknown;
+    characters?: unknown;
+    history?: unknown;
+  } | null;
   if (data?.format !== FORMAT) throw new Error("Keine Dicefree-Datei.");
   const st = data.settings ?? {};
+  const characters = parseList(data.characters, parseCharacter, CHARACTERS_MAX);
   const session: Session = {
+    view: st.view === "character" ? "character" : "dice",
+    characters,
     kind: isKind(st.kind) ? st.kind : "free",
     pool: parsePool(st.pool),
     modifier: intIn(st.modifier, LIMITS.modifier, 0),
@@ -216,13 +254,28 @@ export function fromFile(raw: unknown): Session {
     history: parseList(data.history, parseEntry, HISTORY_MAX),
   };
   if (isAbility(st.ability)) session.ability = st.ability;
+  const active = characters.find((c) => c.id === st.activeCharacterId) ?? characters[0];
+  if (active) session.activeCharacterId = active.id;
   return session;
 }
 
 /** What is kept on the device between visits: settings and saved rolls, not the roll history. */
 export function toStored(s: Session): SessionFile {
   // Built without reading `s.history`, so reactive autosave doesn't re-run on every roll.
-  return toFile({ ...settingsOf(s), presets: s.presets, history: [] });
+  return toFile({
+    view: s.view,
+    kind: s.kind,
+    ability: s.ability,
+    pool: s.pool,
+    modifier: s.modifier,
+    mode: s.mode,
+    crit: s.crit,
+    effects: s.effects,
+    presets: s.presets,
+    characters: s.characters,
+    activeCharacterId: s.activeCharacterId,
+    history: [],
+  });
 }
 
 /** Restores the device-local state; anything unreadable falls back to an empty session. */

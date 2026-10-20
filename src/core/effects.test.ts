@@ -68,6 +68,15 @@ describe("consumable effects", () => {
   });
 });
 
+describe("notes", () => {
+  it("keeps notes from the caller and appends effect notes", () => {
+    const req = buildRoll({ kind: "save", ability: "con", dice: [], modifier: 1, notes: ["SG 10"] }, { poisoned: 1, bless: 1 }, "advantage");
+    expect(req.notes).toEqual(["SG 10"]);
+    const req2 = buildRoll({ kind: "attack", dice: [], modifier: 1, notes: ["x"] }, { poisoned: 1 }, "normal");
+    expect(req2.notes).toEqual(["x", "Nachteil durch Vergiftet"]);
+  });
+});
+
 describe("toggleEffect", () => {
   it("toggles on/off effects and cycles levelled ones", () => {
     expect(toggleEffect({}, "bless")).toEqual({ bless: 1 });

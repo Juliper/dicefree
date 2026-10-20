@@ -15,7 +15,12 @@ Regelbasis: **D&D 2024 / SRD 5.2** (CC-BY-4.0).
   Gelähmt/Betäubt/Bewusstlos (STÄ-/GES-Rettung scheitert), Erschöpfung (−2 pro Stufe), Hilfe erhalten (verbraucht sich),
   halbe/Dreivierteldeckung
 - Gespeicherte Würfe (z. B. „Langschwert: 1d8 + 3“) per +-Kachel; Bonus/Malus aus dem Feld wird beim Würfeln zusätzlich addiert
-- Hervorhebung von natürlicher 20 / natürlicher 1, sobald genau ein d20 im Pool ist
+- Hervorhebung von natürlicher 20 / natürlicher 1 (bei Angriffen und freien Würfen)
+- **Spielermodus / Charakterbogen:** Stufe, Attributswerte, geübte Rettungswürfe, 18 Fertigkeiten mit Übung/Expertise,
+  Zauberattribut, RK und Angriffe. Berechnet Übungsbonus, Zauber-SG, Zauberangriff, passive Wahrnehmung.
+  Ein Tipp würfelt Attributswurf, Rettungswurf, Fertigkeit, Initiative, Konzentration, Todesrettungswurf (mit Auswertung)
+  sowie Angriff und Schaden je Waffe – aktive Effekte und der situative Bonus/Malus fließen automatisch ein.
+  Mehrere Charaktere möglich.
 - Verlauf der letzten 100 Würfe (nur im Speicher)
 - JSON-Import/-Export
 - Fairer Zufall über `crypto.getRandomValues` mit Rejection Sampling
@@ -51,7 +56,7 @@ Jeder Push auf `main` baut und veröffentlicht die Seite per GitHub Action (`.gi
 
 ## Roadmap
 
-- D&D-Modus: Charakterwerte eintragen, Angriffs-, Rettungs- und Konzentrationswürfe per Knopfdruck mit Erfolg/Misserfolg
+- Zauberliste im Charakterbogen aus der SRD-5.2-API (Rettungswurf + SG direkt sichtbar, Schaden pro Grad)
 - Spielleiter-Modus: Monster über die [D&D 5e SRD API](https://www.dnd5eapi.co/) durchsuchen und direkt würfeln
 - Zustände/Conditions tracken und Mali automatisch anwenden
 - Optional: Android-APK über Capacitor als GitHub Release
