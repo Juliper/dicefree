@@ -22,31 +22,58 @@ export function rollDie(sides: number, random: RandomSource = cryptoRandom): num
   return (x % sides) + 1;
 }
 
-export interface RollRequest {
+/** A number of identical dice in a pool, e.g. 2d6. */
+export interface DiceGroup {
   die: Die;
   count: number;
+}
+
+/** A mixed pool plus flat bonus/malus, e.g. 2d6 + 1d8 + 3. */
+export interface RollRequest {
+  dice: DiceGroup[];
   modifier: number;
 }
 
-export interface RollResult extends RollRequest {
+export interface GroupResult {
+  die: Die;
   rolls: number[];
+}
+
+export interface RollResult {
+  groups: GroupResult[];
+  modifier: number;
   total: number;
   at: string;
 }
 
+/** Merges duplicate dice, drops empty groups and sorts largest die first (1d20 + 1d4, as written in D&D). */
+export function normalizePool(dice: DiceGroup[]): DiceGroup[] {
+  const counts = new Map<Die, number>();
+  for (const g of dice) counts.set(g.die, (counts.get(g.die) ?? 0) + g.count);
+  return [...DICE].reverse().filter((d) => (counts.get(d) ?? 0) > 0).map((die) => ({ die, count: counts.get(die)! }));
+}
+
+export function poolSize(dice: DiceGroup[]): number {
+  return dice.reduce((n, g) => n + g.count, 0);
+}
+
 export function roll(req: RollRequest, random: RandomSource = cryptoRandom): RollResult {
-  const rolls = Array.from({ length: req.count }, () => rollDie(req.die, random));
-  const total = rolls.reduce((a, b) => a + b, 0) + req.modifier;
-  return { ...req, rolls, total, at: new Date().toISOString() };
+  const groups = normalizePool(req.dice).map(({ die, count }) => ({
+    die,
+    rolls: Array.from({ length: count }, () => rollDie(die, random)),
+  }));
+  const total = groups.flatMap((g) => g.rolls).reduce((a, b) => a + b, req.modifier);
+  return { groups, modifier: req.modifier, total, at: new Date().toISOString() };
 }
 
 export type Natural = "crit" | "fumble" | null;
 
-/** Natural 20 / natural 1 — only meaningful for a single d20. */
+/** Natural 20 / natural 1 — only when the pool holds exactly one d20 (other dice like a Bless d4 are fine). */
 export function natural(r: RollResult): Natural {
-  if (r.die !== 20 || r.count !== 1) return null;
-  if (r.rolls[0] === 20) return "crit";
-  if (r.rolls[0] === 1) return "fumble";
+  const d20 = r.groups.find((g) => g.die === 20);
+  if (!d20 || d20.rolls.length !== 1) return null;
+  if (d20.rolls[0] === 20) return "crit";
+  if (d20.rolls[0] === 1) return "fumble";
   return null;
 }
 
@@ -54,8 +81,13 @@ export function formatModifier(m: number): string {
   return m >= 0 ? `+${m}` : `${m}`;
 }
 
-export function expression({ count, die, modifier }: RollRequest): string {
-  return `${count}d${die}${modifier ? formatModifier(modifier) : ""}`;
+/** "2d6 + 1d8 + 3" for a request or a result. */
+export function expression(x: RollRequest | RollResult): string {
+  const groups = "dice" in x ? x.dice : x.groups.map((g) => ({ die: g.die, count: g.rolls.length }));
+  const parts = groups.map((g) => `${g.count}d${g.die}`);
+  let s = parts.join(" + ");
+  if (x.modifier) s += `${s ? " " : ""}${x.modifier > 0 ? "+" : "−"} ${Math.abs(x.modifier)}`;
+  return s;
 }
 
 export function isDie(n: unknown): n is Die {

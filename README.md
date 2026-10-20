@@ -5,8 +5,8 @@ Simpler Würfel-Roller ohne Account und ohne Server. Es wird nichts dauerhaft ge
 ## Features (MVP)
 
 - Standardwürfel: d4, d6, d8, d10, d12, d20, d100
-- Anzahl und Modifikator (z. B. `2d6+2`)
-- Hervorhebung von natürlicher 20 / natürlicher 1 beim einzelnen d20
+- Würfelpool aus beliebigen Würfeln plus Bonus/Malus (z. B. `1d20 + 1d4 + 5`)
+- Hervorhebung von natürlicher 20 / natürlicher 1, sobald genau ein d20 im Pool ist
 - Verlauf der letzten 100 Würfe (nur im Speicher)
 - JSON-Import/-Export
 - Fairer Zufall über `crypto.getRandomValues` mit Rejection Sampling
