@@ -143,8 +143,12 @@
     editingCharacter = true;
   }
 
-  function saveCharacter(c: Character) {
+  function updateCharacter(c: Character) {
     session.characters = session.characters.map((x) => (x.id === c.id ? c : x));
+  }
+
+  function saveCharacter(c: Character) {
+    updateCharacter(c);
     editingCharacter = false;
   }
 
@@ -318,7 +322,7 @@
         />
       {/key}
     {:else}
-      <CharacterSheet character={activeCharacter} onroll={rollFromSheet} />
+      <CharacterSheet character={activeCharacter} onroll={rollFromSheet} onupdate={updateCharacter} />
       <section class="pool card" aria-label="Situativ">
         <div class="modifier">
           <label for="sheet-modifier">Situativer Bonus / Malus</label>
@@ -556,6 +560,13 @@
       <p class="hint">Noch keine Würfe. Gespeicherte Würfe, Effekte und Einstellungen bleiben auf diesem Gerät; der Verlauf nicht. Mit Export nimmst du alles auf ein anderes Gerät mit.</p>
     {/if}
   </section>
+  <footer class="attribution">
+    Dieses Werk enthält Material aus dem System Reference Document 5.2 („SRD 5.2“) von Wizards of the Coast LLC,
+    verfügbar unter <a href="https://www.dndbeyond.com/srd" target="_blank" rel="noopener">dndbeyond.com/srd</a>.
+    Das SRD 5.2 steht unter der
+    <a href="https://creativecommons.org/licenses/by/4.0/legalcode" target="_blank" rel="noopener">Creative Commons Attribution 4.0</a>.
+    Daten über <a href="https://www.dnd5eapi.co" target="_blank" rel="noopener">dnd5eapi.co</a>. Kein offizielles Produkt von Wizards of the Coast.
+  </footer>
 </main>
 
 <PresetDialog

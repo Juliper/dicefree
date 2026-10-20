@@ -22,15 +22,33 @@
     skillRoll,
     spellAttackMod,
     spellSaveDC,
+    SPELLS_MAX,
     type Character,
     type SheetRoll,
   } from "../core/character";
+  import { levelLabel, type Spell } from "../core/spells";
+  import SpellCard from "./SpellCard.svelte";
+  import SpellSearch from "./SpellSearch.svelte";
 
   interface Props {
     character: Character;
     onroll: (r: SheetRoll) => void;
+    /** Changes made directly on the sheet (adding/removing spells). */
+    onupdate: (c: Character) => void;
   }
-  let { character: c, onroll }: Props = $props();
+  let { character: c, onroll, onupdate }: Props = $props();
+  let search: SpellSearch;
+
+  const spellLevels = $derived([...new Set(c.spells.map((s) => s.level))].sort((a, b) => a - b));
+
+  function addSpell(s: Spell) {
+    if (c.spells.some((x) => x.index === s.index) || c.spells.length >= SPELLS_MAX) return;
+    onupdate({ ...c, spells: [...c.spells, s].sort((a, b) => a.level - b.level || a.name.localeCompare(b.name)) });
+  }
+
+  function removeSpell(index: string) {
+    onupdate({ ...c, spells: c.spells.filter((s) => s.index !== index) });
+  }
 
   const ABILITY_NAME = {
     str: "Stärke",
@@ -134,3 +152,25 @@
     <p class="hint">Noch keine Angriffe – über „Bearbeiten“ hinzufügen.</p>
   {/if}
 </section>
+
+<section class="spells" aria-label="Zauber">
+  <div class="section-head">
+    <h2>Zauber</h2>
+    <button type="button" class="ghost small" onclick={() => search.open()}>+ Zauber</button>
+  </div>
+  {#if !c.spellAbility}
+    <p class="hint">Tipp: Setze im Bogen ein Zauberattribut, dann zeigt jede Karte deinen Zauber-SG und Angriffsbonus.</p>
+  {/if}
+  {#if c.spells.length}
+    {#each spellLevels as lvl (lvl)}
+      <h3 class="spell-level">{levelLabel(lvl)}</h3>
+      {#each c.spells.filter((s) => s.level === lvl) as s (s.index)}
+        <SpellCard character={c} spell={s} {onroll} onremove={removeSpell} />
+      {/each}
+    {/each}
+  {:else}
+    <p class="hint">Noch keine Zauber. Über „+ Zauber“ aus dem SRD hinzufügen – sie bleiben danach auch offline verfügbar.</p>
+  {/if}
+</section>
+
+<SpellSearch bind:this={search} known={c.spells.map((s) => s.index)} onadd={addSpell} />

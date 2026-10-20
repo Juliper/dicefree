@@ -21,6 +21,9 @@ Regelbasis: **D&D 2024 / SRD 5.2** (CC-BY-4.0).
   Ein Tipp würfelt Attributswurf, Rettungswurf, Fertigkeit, Initiative, Konzentration, Todesrettungswurf (mit Auswertung)
   sowie Angriff und Schaden je Waffe – aktive Effekte und der situative Bonus/Malus fließen automatisch ein.
   Mehrere Charaktere möglich.
+- **Zauberliste** aus dem SRD 5.2 (über dnd5eapi.co): suchen, hinzufügen, und jede Karte zeigt direkt z. B.
+  „GES-Rettungswurf gegen SG 15 · Erfolg: halber Schaden“. Zauberangriff, Schaden und Heilung per Tipp, inkl. Hochstufen
+  und Zaubertrick-Skalierung nach Charakterstufe. Hinzugefügte Zauber liegen im Charakter und funktionieren offline.
 - Verlauf der letzten 100 Würfe (nur im Speicher)
 - JSON-Import/-Export
 - Fairer Zufall über `crypto.getRandomValues` mit Rejection Sampling
@@ -56,7 +59,14 @@ Jeder Push auf `main` baut und veröffentlicht die Seite per GitHub Action (`.gi
 
 ## Roadmap
 
-- Zauberliste im Charakterbogen aus der SRD-5.2-API (Rettungswurf + SG direkt sichtbar, Schaden pro Grad)
 - Spielleiter-Modus: Monster über die [D&D 5e SRD API](https://www.dnd5eapi.co/) durchsuchen und direkt würfeln
 - Zustände/Conditions tracken und Mali automatisch anwenden
 - Optional: Android-APK über Capacitor als GitHub Release
+
+## Lizenz der Spielinhalte
+
+Dieses Werk enthält Material aus dem System Reference Document 5.2 („SRD 5.2“) von Wizards of the Coast LLC,
+verfügbar unter <https://www.dndbeyond.com/srd>. Das SRD 5.2 steht unter der Creative Commons Attribution 4.0
+International License (<https://creativecommons.org/licenses/by/4.0/legalcode>). Daten über <https://www.dnd5eapi.co>.
+Dicefree ist kein offizielles Produkt von Wizards of the Coast.
+

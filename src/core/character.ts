@@ -1,6 +1,7 @@
 // Player character sheet (2024 rules / SRD 5.2) and the values derived from it.
 
 import { ABILITIES, isDie, normalizePool, type Ability, type DiceGroup, type RollKind } from "./dice";
+import { amountAt, damageTypeLabel, parseStoredSpell, type Spell } from "./spells";
 
 export const SKILLS = [
   { id: "acrobatics", name: "Akrobatik", ability: "dex" },
@@ -52,12 +53,14 @@ export interface Character {
   spellAbility?: Ability;
   armorClass?: number;
   attacks: Attack[];
+  spells: Spell[];
 }
 
 export const LEVEL_RANGE = [1, 20] as const;
 export const SCORE_RANGE = [1, 30] as const;
 const NAME_MAX = 40;
 const ATTACKS_MAX = 20;
+export const SPELLS_MAX = 100;
 
 const clamp = (v: number, [min, max]: readonly [number, number]) => Math.min(max, Math.max(min, v));
 const newId = () =>
@@ -72,6 +75,7 @@ export function newCharacter(name = "Neuer Charakter"): Character {
     saves: [],
     skills: {},
     attacks: [],
+    spells: [],
   };
 }
 
@@ -217,6 +221,46 @@ export const damageRoll = (c: Character, a: Attack): SheetRoll => ({
   label: a.damageType ? `${a.name} (${a.damageType})` : a.name,
 });
 
+// --- Spells ---
+
+export function spellAttackRoll(c: Character, spell: Spell): SheetRoll {
+  return { kind: "attack", dice: d20, modifier: spellAttackMod(c) ?? 0, label: spell.name };
+}
+
+export function spellDamageRoll(c: Character, spell: Spell, slot: number): SheetRoll | null {
+  if (!spell.damage) return null;
+  const dice = amountAt(spell.damage, spell.level, slot, c.level);
+  const type = spell.damage.type ? ` (${damageTypeLabel(spell.damage.type)})` : "";
+  const notes: string[] = [];
+  if (spell.save) {
+    const dc = spellSaveDC(c);
+    notes.push(
+      `Ziel: ${ABILITY_SHORT[spell.save.ability]}-Rettungswurf${dc !== null ? ` gegen SG ${dc}` : ""}` +
+        (spell.save.onSuccess === "half" ? " – bei Erfolg halber Schaden" : ""),
+    );
+  }
+  return {
+    kind: "damage",
+    dice,
+    modifier: 0,
+    label: `${spell.name}${slot > spell.level && spell.level > 0 ? ` (Grad ${slot})` : ""}${type}`,
+    notes,
+  };
+}
+
+export function spellHealRoll(c: Character, spell: Spell, slot: number): SheetRoll | null {
+  if (!spell.heal) return null;
+  const mod = spell.heal.addMod && c.spellAbility ? modOf(c, c.spellAbility) : 0;
+  return {
+    kind: "free",
+    dice: amountAt(spell.heal, spell.level, slot, c.level),
+    modifier: mod,
+    label: `${spell.name}${slot > spell.level ? ` (Grad ${slot})` : ""}: Heilung`,
+  };
+}
+
+const ABILITY_SHORT: Record<Ability, string> = { str: "STÄ", dex: "GES", con: "KON", int: "INT", wis: "WEI", cha: "CHA" };
+
 // --- Parsing (tolerant, for import and device storage) ---
 
 const isAbility = (a: unknown): a is Ability => ABILITIES.includes(a as Ability);
@@ -272,6 +316,10 @@ export function parseCharacter(raw: unknown): Character | null {
       .map(parseAttack)
       .filter((a): a is Attack => a !== null)
       .slice(0, ATTACKS_MAX),
+    spells: (Array.isArray(c.spells) ? c.spells : [])
+      .map(parseStoredSpell)
+      .filter((s): s is Spell => s !== null)
+      .slice(0, SPELLS_MAX),
   };
   if (isAbility(c.spellAbility)) out.spellAbility = c.spellAbility;
   if (Number.isInteger(c.armorClass)) out.armorClass = clamp(c.armorClass as number, [0, 40]);
