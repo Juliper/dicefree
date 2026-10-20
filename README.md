@@ -24,6 +24,11 @@ Regelbasis: **D&D 2024 / SRD 5.2** (CC-BY-4.0).
 - **Zauberliste** aus dem SRD 5.2 (über dnd5eapi.co): suchen, hinzufügen, und jede Karte zeigt direkt z. B.
   „GES-Rettungswurf gegen SG 15 · Erfolg: halber Schaden“. Zauberangriff, Schaden und Heilung per Tipp, inkl. Hochstufen
   und Zaubertrick-Skalierung nach Charakterstufe. Hinzugefügte Zauber liegen im Charakter und funktionieren offline.
+- **Spielleiter-Modus:** Monster aus dem SRD 5.2 suchen und zu einem Kampf hinzufügen (Duplikate werden durchnummeriert,
+  EP summiert). Jede Monsterkarte zeigt RK, TP (mit Schaden/Heilen und „TP würfeln“), Aktionen, Bonusaktionen,
+  Reaktionen, legendäre Aktionen und Zauberwirken. Ein Tipp würfelt Angriff, Schaden (alle Schadensarten, mit Krit),
+  Aufladung (mit Auswertung), Initiative, Attributs- und Rettungswürfe sowie Fertigkeiten. SG-Fähigkeiten wie Odem
+  zeigen Rettungswurf, SG und „halber Schaden“. Zustände und Effekte gelten pro Monster.
 - Verlauf der letzten 100 Würfe (nur im Speicher)
 - JSON-Import/-Export
 - Fairer Zufall über `crypto.getRandomValues` mit Rejection Sampling
@@ -59,8 +64,9 @@ Jeder Push auf `main` baut und veröffentlicht die Seite per GitHub Action (`.gi
 
 ## Roadmap
 
-- Spielleiter-Modus: Monster über die [D&D 5e SRD API](https://www.dnd5eapi.co/) durchsuchen und direkt würfeln
-- Zustände/Conditions tracken und Mali automatisch anwenden
+- Initiative-Reihenfolge und Runden-Tracking im Kampf
+- Spieler-Charaktere (RK, TP) im Kampf, Treffer/Verfehlt gegen RK für den Spielleiter
+- Dauer von Zuständen/Effekten in Runden, Konzentrations-Erinnerung bei Schaden
 - Optional: Android-APK über Capacitor als GitHub Release
 
 ## Lizenz der Spielinhalte

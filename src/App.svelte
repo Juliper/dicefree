@@ -23,12 +23,16 @@
     PRESETS_MAX,
     ROLL_KINDS,
     CHARACTERS_MAX,
+    ENCOUNTER_MAX,
+    addCombatant,
+    removeCombatant,
     adjustPool,
     clamp,
     toFile,
     fromFile,
     fromStored,
     toStored,
+    type Combatant,
     type Preset,
   } from "./core/session";
   import { saveJson, readJson } from "./platform/files";
@@ -38,6 +42,10 @@
   import CharacterSheet from "./components/CharacterSheet.svelte";
   import CharacterEditor from "./components/CharacterEditor.svelte";
   import { deathSaveOutcome, newCharacter, type Character, type SheetRoll } from "./core/character";
+  import CombatantCard from "./components/CombatantCard.svelte";
+  import MonsterSearch from "./components/MonsterSearch.svelte";
+  import { rechargeOutcome, type Monster, type MonsterRoll } from "./core/monsters";
+  import type { ActiveEffects } from "./core/effects";
 
   const MODES: { value: RollMode; label: string }[] = [
     { value: "normal", label: "Normal" },
@@ -58,6 +66,9 @@
   let modText = $state(String(restored.modifier)); // raw text of the Bonus/Malus field while typing
   let presetDialog: PresetDialog;
   let editingCharacter = $state(false);
+  let monsterSearch: MonsterSearch;
+  const statblock = (index: string) => session.bestiary.find((m) => m.index === index);
+  const encounterXp = $derived(session.encounter.reduce((n, c) => n + (statblock(c.index)?.xp ?? 0), 0));
 
   const activeCharacter = $derived(
     session.characters.find((c) => c.id === session.activeCharacterId) ?? session.characters[0],
@@ -85,20 +96,64 @@
     rollId++;
   }
 
-  function doRoll(base: RollRequest & { kind: RollKind; deathSave?: boolean }) {
-    const { deathSave, ...rest } = base;
-    const { consumed, ...req } = buildRoll(rest, session.effects, session.mode);
+  /**
+   * Rolls with the given active effects (default: the player's own) and the shared
+   * situational settings. Returns the result and the consumable effects it used up.
+   */
+  function doRoll(
+    base: RollRequest & { kind: RollKind; deathSave?: boolean; rechargeAt?: number },
+    effects?: ActiveEffects,
+  ) {
+    const own = effects === undefined;
+    const { deathSave, rechargeAt, ...rest } = base;
+    const { consumed, ...req } = buildRoll(rest, effects ?? session.effects, session.mode);
     const r = roll(req);
     if (deathSave) {
       const kept = r.groups.find((g) => g.die === 20 && !g.source)?.rolls[0] ?? 0;
       r.notes = [...(r.notes ?? []), deathSaveOutcome(kept, r.total)];
     }
+    if (rechargeAt) r.notes = [...(r.notes ?? []), rechargeOutcome(r.total, rechargeAt)];
     session.history = [r, ...session.history].slice(0, HISTORY_MAX);
-    if (consumed.length) {
-      session.effects = Object.fromEntries(Object.entries(session.effects).filter(([id]) => !consumed.includes(id)));
-    }
+    if (own && consumed.length) session.effects = withoutEffects(session.effects, consumed);
     if (base.kind === "damage") session.crit = false; // a crit is per hit
     show(r);
+    return { result: r, consumed };
+  }
+
+  const withoutEffects = (e: ActiveEffects, ids: string[]) =>
+    Object.fromEntries(Object.entries(e).filter(([id]) => !ids.includes(id)));
+
+  // --- DM mode ---
+
+  function addMonster(m: Monster) {
+    Object.assign(session, addCombatant(session, m));
+  }
+
+  function updateCombatant(c: Combatant) {
+    session.encounter = session.encounter.map((x) => (x.id === c.id ? c : x));
+  }
+
+  function removeMonster(id: string) {
+    Object.assign(session, removeCombatant(session, id));
+  }
+
+  function clearEncounter() {
+    if (confirm("Alle Monster aus dem Kampf entfernen?")) Object.assign(session, { encounter: [], bestiary: [] });
+  }
+
+  function rollForCombatant(c: Combatant, r: MonsterRoll, effects: ActiveEffects) {
+    const { consumed } = doRoll(
+      { ...r, modifier: clamp(r.modifier + session.modifier, LIMITS.modifier), crit: r.kind === "damage" && session.crit },
+      effects,
+    );
+    if (consumed.length) updateCombatant({ ...c, effects: withoutEffects(c.effects, consumed) });
+  }
+
+  /** Rolled hit points become the combatant's maximum and current HP. */
+  function rollHitPoints(c: Combatant, r: MonsterRoll) {
+    const { result } = doRoll(r, {});
+    const hp = Math.max(1, result.total);
+    updateCombatant({ ...c, hp, maxHp: hp });
   }
 
   function rollCurrent() {
@@ -237,6 +292,44 @@
     <span class="mode-tag advantage">Kritisch</span>{/if}
 {/snippet}
 
+{#snippet situational()}
+  <section class="pool card" aria-label="Situativ">
+        <div class="modifier">
+          <label for="sheet-modifier">Situativer Bonus / Malus</label>
+          <div class="modifier-input">
+            <button type="button" aria-label="Malus erhöhen" onclick={() => setModifier(session.modifier - 1)}>−</button>
+            <input
+              id="sheet-modifier"
+              type="text"
+              inputmode="numeric"
+              autocomplete="off"
+              bind:value={modText}
+              oninput={onModInput}
+              onblur={() => setModifier(session.modifier)}
+              onfocus={(e) => e.currentTarget.select()}
+            />
+            <button type="button" aria-label="Bonus erhöhen" onclick={() => setModifier(session.modifier + 1)}>+</button>
+          </div>
+        </div>
+        <div class="mode" role="radiogroup" aria-label="Vorteil oder Nachteil">
+          {#each MODES as m (m.value)}
+            <button
+              type="button"
+              role="radio"
+              aria-checked={session.mode === m.value}
+              class:selected={session.mode === m.value}
+              class={m.value}
+              onclick={() => (session.mode = m.value)}>{m.label}</button
+            >
+          {/each}
+        </div>
+        <label class="switch">
+          <input type="checkbox" bind:checked={session.crit} />
+          <span>Nächster Schaden ist ein kritischer Treffer</span>
+        </label>
+      </section>
+{/snippet}
+
 <header class="topbar">
   <h1>Dicefree</h1>
   <div class="topbar-actions">
@@ -281,6 +374,9 @@
       aria-current={session.view === "character"}
       onclick={() => (session.view = "character")}>Charakter</button
     >
+    <button type="button" class:selected={session.view === "dm"} aria-current={session.view === "dm"} onclick={() => (session.view = "dm")}
+      >Spielleiter</button
+    >
   </nav>
 
   {#if session.view === "character"}
@@ -323,40 +419,44 @@
       {/key}
     {:else}
       <CharacterSheet character={activeCharacter} onroll={rollFromSheet} onupdate={updateCharacter} />
-      <section class="pool card" aria-label="Situativ">
-        <div class="modifier">
-          <label for="sheet-modifier">Situativer Bonus / Malus</label>
-          <div class="modifier-input">
-            <button type="button" aria-label="Malus erhöhen" onclick={() => setModifier(session.modifier - 1)}>−</button>
-            <input
-              id="sheet-modifier"
-              type="text"
-              inputmode="numeric"
-              autocomplete="off"
-              bind:value={modText}
-              oninput={onModInput}
-              onblur={() => setModifier(session.modifier)}
-              onfocus={(e) => e.currentTarget.select()}
-            />
-            <button type="button" aria-label="Bonus erhöhen" onclick={() => setModifier(session.modifier + 1)}>+</button>
-          </div>
-        </div>
-        <div class="mode" role="radiogroup" aria-label="Vorteil oder Nachteil">
-          {#each MODES as m (m.value)}
-            <button
-              type="button"
-              role="radio"
-              aria-checked={session.mode === m.value}
-              class:selected={session.mode === m.value}
-              class={m.value}
-              onclick={() => (session.mode = m.value)}>{m.label}</button
-            >
-          {/each}
-        </div>
-        <label class="switch">
-          <input type="checkbox" bind:checked={session.crit} />
-          <span>Nächster Schaden ist ein kritischer Treffer</span>
-        </label>
+      {@render situational()}
+    {/if}
+  {:else if session.view === "dm"}
+    <section class="character-bar" aria-label="Kampf">
+      <div class="bar-title">
+        <h2 class="character-name">Kampf</h2>
+        {#if session.encounter.length}
+          <small>{session.encounter.length} Monster · {encounterXp.toLocaleString("de-DE")} EP</small>
+        {/if}
+      </div>
+      <span class="spacer"></span>
+      {#if session.encounter.length}
+        <button type="button" class="ghost small" onclick={clearEncounter}>Leeren</button>
+      {/if}
+      {#if session.encounter.length < ENCOUNTER_MAX}
+        <button type="button" class="ghost small" onclick={() => monsterSearch.open()}>+ Monster</button>
+      {/if}
+    </section>
+
+    {#if session.encounter.length}
+      {@render situational()}
+      {#each session.encounter as c (c.id)}
+        {@const m = statblock(c.index)}
+        {#if m}
+          <CombatantCard
+            combatant={c}
+            monster={m}
+            onroll={(r, effects) => rollForCombatant(c, r, effects)}
+            onrollhp={(r) => rollHitPoints(c, r)}
+            onupdate={updateCombatant}
+            onremove={removeMonster}
+          />
+        {/if}
+      {/each}
+    {:else}
+      <section class="card empty">
+        <p>Stell dir einen Kampf zusammen: Monster aus dem SRD 5.2 suchen, mit einem Tipp Angriffe, Schaden, Rettungswürfe und Aufladungen würfeln, TP und Zustände pro Monster verfolgen.</p>
+        <button type="button" class="primary" onclick={() => monsterSearch.open()}>Monster hinzufügen</button>
       </section>
     {/if}
   {:else}
@@ -477,7 +577,7 @@
 
   {/if}
 
-  {#if !(session.view === "character" && editingCharacter)}
+  {#if !(session.view === "character" && editingCharacter) && session.view !== "dm"}
   <section class="effects" aria-label="Aktive Effekte">
     <div class="section-head">
       <h2>Aktive Effekte</h2>
@@ -568,6 +668,8 @@
     Daten über <a href="https://www.dnd5eapi.co" target="_blank" rel="noopener">dnd5eapi.co</a>. Kein offizielles Produkt von Wizards of the Coast.
   </footer>
 </main>
+
+<MonsterSearch bind:this={monsterSearch} bestiary={session.bestiary} onadd={addMonster} />
 
 <PresetDialog
   bind:this={presetDialog}

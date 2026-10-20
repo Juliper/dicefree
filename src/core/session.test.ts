@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { roll } from "./dice";
 import { newCharacter } from "./character";
+import { addCombatant, removeCombatant } from "./session";
+import type { Monster } from "./monsters";
 import { HISTORY_MAX, adjustPool, emptySession, fromFile, fromStored, makePreset, toFile, toStored, type Session } from "./session";
 
 describe("adjustPool", () => {
@@ -162,5 +164,40 @@ describe("characters in the session", () => {
     const s = fromFile({ format: "dicefree", settings: { activeCharacterId: "gone" }, characters: [a, { nope: 1 }] });
     expect(s.characters).toEqual([a]);
     expect(s.activeCharacterId).toBe(a.id);
+  });
+});
+
+describe("encounter", () => {
+  const goblin = {
+    index: "goblin-warrior", name: "Goblin Warrior", size: "Small", type: "fey", cr: 0.25, xp: 50, ac: 15, hp: 10,
+    hitDice: "3d6", speed: "30 ft.", scores: { str: 8, dex: 15, con: 10, int: 10, wis: 8, cha: 8 }, saves: {}, skills: [],
+    senses: "", languages: "", resistances: [], immunities: [], vulnerabilities: [], conditionImmunities: [], actions: [],
+  } satisfies Monster;
+
+  it("numbers duplicates and shares the statblock", () => {
+    let s = addCombatant({ bestiary: [], encounter: [] }, goblin);
+    s = addCombatant(s, goblin);
+    expect(s.encounter.map((c) => c.label)).toEqual(["Goblin Warrior", "Goblin Warrior 2"]);
+    expect(s.bestiary).toHaveLength(1);
+    expect(s.encounter[1]).toMatchObject({ hp: 10, maxHp: 10, effects: {} });
+  });
+
+  it("forgets unused statblocks on removal", () => {
+    let s = addCombatant({ bestiary: [], encounter: [] }, goblin);
+    s = removeCombatant(s, s.encounter[0].id);
+    expect(s).toEqual({ bestiary: [], encounter: [] });
+  });
+
+  it("round-trips through storage and drops combatants without statblock", () => {
+    const enc = addCombatant({ bestiary: [], encounter: [] }, goblin);
+    enc.encounter[0].hp = 3;
+    enc.encounter[0].effects = { poisoned: 1 };
+    const s: Session = { ...emptySession(), view: "dm", ...enc };
+    const back = fromStored(JSON.parse(JSON.stringify(toStored(s))));
+    expect(back.view).toBe("dm");
+    expect(back.encounter).toEqual(enc.encounter);
+    expect(back.bestiary).toEqual([goblin]);
+    const orphan = fromFile({ format: "dicefree", bestiary: [], encounter: enc.encounter });
+    expect(orphan.encounter).toEqual([]);
   });
 });

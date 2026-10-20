@@ -494,7 +494,7 @@ main {
 /* View switch */
 .views {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -821,3 +821,79 @@ footer.attribution {
 }
 footer.attribution a { color: inherit; }
 .hint.attribution { font-size: 0.72rem; margin: 0; }
+
+/* DM mode */
+.combatant {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.combatant.down { opacity: 0.6; }
+.combatant.down h3::after { content: " – kampfunfähig"; font-weight: 400; font-size: 0.85rem; color: var(--fumble); }
+.combatant-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.combatant-head h3 { margin: 0; font-size: 1.05rem; }
+.combatant-head .spell-meta { margin-top: 2px; }
+.combatant-stats { display: flex; gap: 6px; align-items: stretch; flex-wrap: wrap; }
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-weight: 700;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+.stat small { font-size: 0.68rem; font-weight: 500; color: var(--muted); }
+.stat.hp.low { border-color: var(--fumble); color: var(--fumble); }
+.hp-edit { display: flex; gap: 4px; flex: 1; min-width: 200px; }
+.hp-edit input {
+  width: 64px;
+  min-width: 0;
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  text-align: center;
+}
+.hp-edit button {
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  font-size: 0.85rem;
+}
+.combatant .quick-rolls small { color: var(--muted); font-size: 0.75rem; }
+.combatant-effects { margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--accent); }
+.combatant h4.spell-level { margin: 4px 0 0; }
+.monster-action {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0;
+  border-top: 1px dashed var(--border);
+}
+.monster-action-head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.tag-text { font-size: 0.75rem; color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 0 6px; }
+.monster-action details summary { font-size: 0.8rem; }
+.combatant-more summary { cursor: pointer; font-size: 0.9rem; font-weight: 600; padding: 6px 0; }
+.combatant-more .abilities-grid { margin: 6px 0; }
+.skills-row { margin: 6px 0; }
+.monster-facts { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 6px 0 0; font-size: 0.85rem; }
+.monster-facts dt { color: var(--muted); }
+.monster-facts dd { margin: 0; }
+.bar-title { display: flex; flex-direction: column; min-width: 0; }
+.bar-title small { color: var(--muted); font-size: 0.75rem; white-space: nowrap; }
+.character-bar .ghost { white-space: nowrap; flex: none; }
+.character-name { flex: none; }
+.action-text { margin: 0; font-size: 0.85rem; color: var(--muted); }

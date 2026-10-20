@@ -11,6 +11,7 @@ import {
 } from "./dice";
 import { parseActiveEffects, type ActiveEffects } from "./effects";
 import { parseCharacter, type Character } from "./character";
+import { parseStoredMonster, type Monster } from "./monsters";
 
 export const LIMITS = {
   groupCount: [0, 50],
@@ -22,8 +23,9 @@ export const PRESETS_MAX = 50;
 export const PRESET_NAME_MAX = 40;
 
 const FORMAT = "dicefree";
-const VERSION = 5;
+const VERSION = 6;
 export const CHARACTERS_MAX = 20;
+export const ENCOUNTER_MAX = 40;
 
 export const ROLL_KINDS: readonly RollKind[] = ["free", "attack", "check", "save", "damage"];
 const isKind = (k: unknown): k is RollKind => ROLL_KINDS.includes(k as RollKind);
@@ -49,13 +51,26 @@ export interface Settings {
   effects: ActiveEffects;
 }
 
-export type View = "dice" | "character";
+export type View = "dice" | "character" | "dm";
+
+/** One monster in the current encounter; several can share a statblock. */
+export interface Combatant {
+  id: string;
+  index: string;
+  label: string;
+  hp: number;
+  maxHp: number;
+  effects: ActiveEffects;
+}
 
 export interface Session extends Settings {
   view: View;
   presets: Preset[];
   characters: Character[];
   activeCharacterId?: string;
+  /** Statblocks used in the encounter, by index. */
+  bestiary: Monster[];
+  encounter: Combatant[];
   history: RollResult[]; // newest first
 }
 
@@ -66,6 +81,8 @@ export interface SessionFile {
   settings: Settings & { view: View; activeCharacterId?: string };
   presets: Preset[];
   characters: Character[];
+  bestiary: Monster[];
+  encounter: Combatant[];
   history: RollResult[];
 }
 
@@ -80,6 +97,8 @@ export function emptySession(): Session {
     effects: {},
     presets: [],
     characters: [],
+    bestiary: [],
+    encounter: [],
     history: [],
   };
 }
@@ -140,7 +159,39 @@ export function toFile(s: Session): SessionFile {
     settings: settingsOf(s),
     presets: s.presets,
     characters: s.characters,
+    bestiary: s.bestiary,
+    encounter: s.encounter,
     history: s.history,
+  };
+}
+
+/** Adds a monster to the encounter, numbering duplicates ("Goblin 2"). */
+export function addCombatant(s: Pick<Session, "bestiary" | "encounter">, m: Monster): Pick<Session, "bestiary" | "encounter"> {
+  if (s.encounter.length >= ENCOUNTER_MAX) return s;
+  const bestiary = s.bestiary.some((x) => x.index === m.index) ? s.bestiary : [...s.bestiary, m];
+  const same = s.encounter.filter((c) => c.index === m.index);
+  const label = same.length ? `${m.name} ${same.length + 1}` : m.name;
+  const combatant: Combatant = { id: newId(), index: m.index, label, hp: m.hp, maxHp: m.hp, effects: {} };
+  return { bestiary, encounter: [...s.encounter, combatant] };
+}
+
+/** Removes a combatant and forgets statblocks nobody uses any more. */
+export function removeCombatant(s: Pick<Session, "bestiary" | "encounter">, id: string): Pick<Session, "bestiary" | "encounter"> {
+  const encounter = s.encounter.filter((c) => c.id !== id);
+  return { encounter, bestiary: s.bestiary.filter((m) => encounter.some((c) => c.index === m.index)) };
+}
+
+function parseCombatant(raw: unknown, known: Set<string>): Combatant | null {
+  const c = raw as Record<string, unknown> | null;
+  if (!c || typeof c.index !== "string" || !known.has(c.index)) return null;
+  const maxHp = intIn(c.maxHp, [1, 9999], 1);
+  return {
+    id: typeof c.id === "string" && c.id ? c.id.slice(0, 64) : newId(),
+    index: c.index,
+    label: typeof c.label === "string" && c.label.trim() ? c.label.trim().slice(0, PRESET_NAME_MAX) : c.index,
+    hp: intIn(c.hp, [-9999, 9999], maxHp),
+    maxHp,
+    effects: parseActiveEffects(c.effects),
   };
 }
 
@@ -229,21 +280,27 @@ const parseList = <T>(raw: unknown, parse: (x: unknown) => T | null, max: number
     .filter((x): x is T => x !== null)
     .slice(0, max);
 
-/** Parses an exported file (v1–v5). Throws on foreign files; silently drops malformed entries. */
+/** Parses an exported file (v1–v6). Throws on foreign files; silently drops malformed entries. */
 export function fromFile(raw: unknown): Session {
   const data = raw as {
     format?: unknown;
     settings?: Record<string, unknown>;
     presets?: unknown;
     characters?: unknown;
+    bestiary?: unknown;
+    encounter?: unknown;
     history?: unknown;
   } | null;
   if (data?.format !== FORMAT) throw new Error("Keine Dicefree-Datei.");
   const st = data.settings ?? {};
   const characters = parseList(data.characters, parseCharacter, CHARACTERS_MAX);
+  const bestiary = parseList(data.bestiary, parseStoredMonster, ENCOUNTER_MAX);
+  const known = new Set(bestiary.map((m) => m.index));
   const session: Session = {
-    view: st.view === "character" ? "character" : "dice",
+    view: st.view === "character" || st.view === "dm" ? st.view : "dice",
     characters,
+    bestiary,
+    encounter: parseList(data.encounter, (c) => parseCombatant(c, known), ENCOUNTER_MAX),
     kind: isKind(st.kind) ? st.kind : "free",
     pool: parsePool(st.pool),
     modifier: intIn(st.modifier, LIMITS.modifier, 0),
@@ -274,6 +331,8 @@ export function toStored(s: Session): SessionFile {
     presets: s.presets,
     characters: s.characters,
     activeCharacterId: s.activeCharacterId,
+    bestiary: s.bestiary,
+    encounter: s.encounter,
     history: [],
   });
 }
