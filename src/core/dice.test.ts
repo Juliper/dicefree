@@ -108,3 +108,48 @@ describe("formatting", () => {
     expect(expression(r)).toBe("2d6 + 1");
   });
 });
+
+describe("advantage / disadvantage", () => {
+  const attack = (mode: "advantage" | "disadvantage" | "normal", extra: { die: 4; count: number }[] = []) =>
+    ({ dice: [{ die: 20 as const, count: 1 }, ...extra], modifier: 5, mode });
+
+  it("keeps the higher d20 with advantage", () => {
+    const r = roll(attack("advantage"), sequence(3, 16)); // 4 and 17
+    expect(r.groups).toEqual([{ die: 20, rolls: [17], dropped: [4] }]);
+    expect(r.total).toBe(22);
+    expect(r.mode).toBe("advantage");
+  });
+
+  it("keeps the lower d20 with disadvantage", () => {
+    const r = roll(attack("disadvantage"), sequence(3, 16));
+    expect(r.groups).toEqual([{ die: 20, rolls: [4], dropped: [17] }]);
+    expect(r.total).toBe(9);
+  });
+
+  it("uses the kept die for natural 20 / 1", () => {
+    expect(natural(roll(attack("advantage"), sequence(0, 19)))).toBe("crit");
+    expect(natural(roll(attack("disadvantage"), sequence(0, 19)))).toBe("fumble");
+  });
+
+  it("only affects the d20, other dice roll normally", () => {
+    const r = roll(attack("advantage", [{ die: 4, count: 2 }]), sequence(9, 14, 1, 2));
+    expect(r.groups).toEqual([
+      { die: 20, rolls: [15], dropped: [10] },
+      { die: 4, rolls: [2, 3] },
+    ]);
+    expect(r.total).toBe(25);
+  });
+
+  it("is ignored without exactly one d20", () => {
+    const none = roll({ dice: [{ die: 6, count: 2 }], modifier: 0, mode: "advantage" }, sequence(0, 1));
+    expect(none.mode).toBeUndefined();
+    expect(none.groups).toEqual([{ die: 6, rolls: [1, 2] }]);
+    const two = roll({ dice: [{ die: 20, count: 2 }], modifier: 0, mode: "advantage" }, sequence(0, 1));
+    expect(two.mode).toBeUndefined();
+    expect(two.groups[0].rolls).toHaveLength(2);
+  });
+
+  it("normal mode leaves the result unmarked", () => {
+    expect(roll(attack("normal"), sequence(0)).mode).toBeUndefined();
+  });
+});

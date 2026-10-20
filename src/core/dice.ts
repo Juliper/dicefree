@@ -28,15 +28,24 @@ export interface DiceGroup {
   count: number;
 }
 
+export type RollMode = "normal" | "advantage" | "disadvantage";
+
 /** A mixed pool plus flat bonus/malus, e.g. 2d6 + 1d8 + 3. */
 export interface RollRequest {
   dice: DiceGroup[];
   modifier: number;
+  /** Advantage/disadvantage; only applies when the pool holds exactly one d20. */
+  mode?: RollMode;
+  /** Optional name, e.g. of the saved roll that produced it. */
+  label?: string;
 }
 
 export interface GroupResult {
   die: Die;
+  /** Dice that count towards the total. */
   rolls: number[];
+  /** The discarded d20 of an advantage/disadvantage roll. */
+  dropped?: number[];
 }
 
 export interface RollResult {
@@ -44,6 +53,8 @@ export interface RollResult {
   modifier: number;
   total: number;
   at: string;
+  mode?: Exclude<RollMode, "normal">;
+  label?: string;
 }
 
 /** Merges duplicate dice, drops empty groups and sorts largest die first (1d20 + 1d4, as written in D&D). */
@@ -57,13 +68,27 @@ export function poolSize(dice: DiceGroup[]): number {
   return dice.reduce((n, g) => n + g.count, 0);
 }
 
+/** Advantage/disadvantage is only defined for a single d20 (attack rolls, checks, saves). */
+export function modeApplies(dice: DiceGroup[]): boolean {
+  return normalizePool(dice).find((g) => g.die === 20)?.count === 1;
+}
+
 export function roll(req: RollRequest, random: RandomSource = cryptoRandom): RollResult {
-  const groups = normalizePool(req.dice).map(({ die, count }) => ({
-    die,
-    rolls: Array.from({ length: count }, () => rollDie(die, random)),
-  }));
+  const mode = req.mode && req.mode !== "normal" && modeApplies(req.dice) ? req.mode : undefined;
+  const groups: GroupResult[] = normalizePool(req.dice).map(({ die, count }) => {
+    if (die === 20 && mode) {
+      const a = rollDie(20, random);
+      const b = rollDie(20, random);
+      const keepA = mode === "advantage" ? a >= b : a <= b;
+      return { die, rolls: [keepA ? a : b], dropped: [keepA ? b : a] };
+    }
+    return { die, rolls: Array.from({ length: count }, () => rollDie(die, random)) };
+  });
   const total = groups.flatMap((g) => g.rolls).reduce((a, b) => a + b, req.modifier);
-  return { groups, modifier: req.modifier, total, at: new Date().toISOString() };
+  const result: RollResult = { groups, modifier: req.modifier, total, at: new Date().toISOString() };
+  if (mode) result.mode = mode;
+  if (req.label) result.label = req.label;
+  return result;
 }
 
 export type Natural = "crit" | "fumble" | null;

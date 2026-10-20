@@ -1,12 +1,48 @@
 <script lang="ts">
-  import { DICE, roll, natural, expression, poolSize, type Die, type RollResult } from "./core/dice";
-  import { LIMITS, HISTORY_MAX, adjustPool, clamp, emptySession, toFile, fromFile } from "./core/session";
+  import {
+    DICE,
+    roll,
+    natural,
+    expression,
+    modeApplies,
+    poolSize,
+    type Die,
+    type RollMode,
+    type RollRequest,
+    type RollResult,
+  } from "./core/dice";
+  import {
+    LIMITS,
+    HISTORY_MAX,
+    PRESETS_MAX,
+    adjustPool,
+    clamp,
+    toFile,
+    fromFile,
+    fromStored,
+    toStored,
+    type Preset,
+  } from "./core/session";
   import { saveJson, readJson } from "./platform/files";
+  import { loadLocal, saveLocal } from "./platform/storage";
+  import PresetDialog from "./components/PresetDialog.svelte";
 
-  let session = $state(emptySession());
+  const MODES: { value: RollMode; label: string }[] = [
+    { value: "normal", label: "Normal" },
+    { value: "advantage", label: "Vorteil" },
+    { value: "disadvantage", label: "Nachteil" },
+  ];
+  const MODE_LABEL = { advantage: "Vorteil", disadvantage: "Nachteil" } as const;
+
+  const restored = fromStored(loadLocal());
+  let session = $state(restored);
   let current = $state<RollResult | null>(null);
   let rollId = $state(0); // bumps on every roll to replay the pop animation
-  let modText = $state("0"); // raw text of the Bonus/Malus field while typing
+  let modText = $state(String(restored.modifier)); // raw text of the Bonus/Malus field while typing
+  let presetDialog: PresetDialog;
+
+  // Keep settings and saved rolls on this device (the roll history stays in memory only).
+  $effect(() => saveLocal(toStored(session)));
 
   const nat = $derived(current ? natural(current) : null);
   const canRoll = $derived(poolSize(session.pool) > 0);
@@ -17,11 +53,29 @@
     rollId++;
   }
 
-  function rollPool() {
-    if (!canRoll) return;
-    const r = roll({ dice: session.pool, modifier: session.modifier });
+  function doRoll(req: RollRequest) {
+    const r = roll({ ...req, mode: session.mode });
     session.history = [r, ...session.history].slice(0, HISTORY_MAX);
     show(r);
+  }
+
+  function rollPool() {
+    if (canRoll) doRoll({ dice: session.pool, modifier: session.modifier });
+  }
+
+  /** Saved rolls bring their own bonus; the Bonus/Malus field is added on top. */
+  function rollPreset(p: Preset) {
+    doRoll({ dice: p.dice, modifier: clamp(p.modifier + session.modifier, LIMITS.modifier), label: p.name });
+  }
+
+  function savePreset(p: Preset) {
+    session.presets = session.presets.some((x) => x.id === p.id)
+      ? session.presets.map((x) => (x.id === p.id ? p : x))
+      : [...session.presets, p].slice(0, PRESETS_MAX);
+  }
+
+  function deletePreset(id: string) {
+    session.presets = session.presets.filter((p) => p.id !== id);
   }
 
   function changeDie(die: Die, delta: number) {
@@ -62,8 +116,16 @@
 {#snippet rolls(r: RollResult)}
   {#each r.groups as g, i}
     {#if i}<span class="sep">·</span>{/if}
-    <span class="group"><span class="group-die">d{g.die}</span> {g.rolls.join(", ")}</span>
+    <span class="group"
+      ><span class="group-die">d{g.die}</span>
+      {g.rolls.join(", ")}{#if g.dropped}{" "}<s class="dropped" title="verworfen">{g.dropped.join(", ")}</s>{/if}</span
+    >
   {/each}
+{/snippet}
+
+{#snippet title(r: RollResult)}
+  {#if r.label}<strong>{r.label}</strong>{" · "}{/if}{expression(r)}{#if r.mode}
+    <span class="mode-tag {r.mode}">{MODE_LABEL[r.mode]}</span>{/if}
 {/snippet}
 
 <header class="topbar">
@@ -79,7 +141,9 @@
 
 <main>
   <section class="result" class:crit={nat === "crit"} class:fumble={nat === "fumble"} aria-live="polite">
-    <div class="result-label">{current ? expression(current) : "Stell dir einen Wurf zusammen"}</div>
+    <div class="result-label">
+      {#if current}{@render title(current)}{:else}Stell dir einen Wurf zusammen{/if}
+    </div>
     {#key rollId}
       <div class="result-total" class:pop={current}>{current?.total ?? "–"}</div>
     {/key}
@@ -133,11 +197,50 @@
       </div>
     </div>
 
+    <div class="mode" role="radiogroup" aria-label="Vorteil oder Nachteil">
+      {#each MODES as m (m.value)}
+        <button
+          type="button"
+          role="radio"
+          aria-checked={session.mode === m.value}
+          class:selected={session.mode === m.value}
+          class={m.value}
+          onclick={() => (session.mode = m.value)}>{m.label}</button
+        >
+      {/each}
+    </div>
+    {#if session.mode !== "normal" && canRoll && !modeApplies(session.pool)}
+      <p class="hint mode-hint">{MODE_LABEL[session.mode]} wirkt nur, wenn genau ein d20 im Wurf ist.</p>
+    {/if}
+
     <div class="roll-row">
       <button type="button" class="ghost" disabled={!canRoll} onclick={() => (session.pool = [])}>Leeren</button>
       <button type="button" class="roll" disabled={!canRoll} onclick={rollPool}>
         {canRoll ? `Würfeln: ${expression({ dice: session.pool, modifier: session.modifier })}` : "Würfel antippen"}
       </button>
+    </div>
+  </section>
+
+  <section class="presets" aria-label="Gespeicherte Würfe">
+    <h2>Gespeicherte Würfe</h2>
+    <div class="preset-grid">
+      {#each session.presets as p (p.id)}
+        <div class="preset">
+          <button type="button" class="preset-roll" onclick={() => rollPreset(p)}>
+            <span class="preset-name">{p.name}</span>
+            <span class="preset-expr">{expression(p)}</span>
+          </button>
+          <button type="button" class="preset-edit" aria-label="{p.name} bearbeiten" onclick={() => presetDialog.openEdit(p)}
+            >⋯</button
+          >
+        </div>
+      {/each}
+      {#if session.presets.length < PRESETS_MAX}
+        <button type="button" class="preset add" aria-label="Aktuelle Auswahl als Wurf speichern" onclick={() => presetDialog.openNew()}>
+          <span class="plus">+</span>
+          <span class="preset-expr">{canRoll ? expression({ dice: session.pool, modifier: 0 }) : "Auswahl speichern"}</span>
+        </button>
+      {/if}
     </div>
   </section>
 
@@ -153,7 +256,7 @@
         {#each session.history as e}
           <li>
             <div class="h-main">
-              <span class="h-expr">{expression(e)}</span>
+              <span class="h-expr">{@render title(e)}</span>
               <span class="h-rolls">{@render rolls(e)}</span>
             </div>
             <span class="h-total">{e.total}</span>
@@ -161,7 +264,9 @@
         {/each}
       </ol>
     {:else}
-      <p class="hint">Noch keine Würfe. Nichts wird gespeichert – nutze Export, um deine Daten mitzunehmen.</p>
+      <p class="hint">Noch keine Würfe. Gespeicherte Würfe und Einstellungen bleiben auf diesem Gerät; der Verlauf nicht. Mit Export nimmst du alles auf ein anderes Gerät mit.</p>
     {/if}
   </section>
 </main>
+
+<PresetDialog bind:this={presetDialog} pool={session.pool} onsave={savePreset} ondelete={deletePreset} />
