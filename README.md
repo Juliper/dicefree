@@ -2,11 +2,18 @@
 
 Simpler Würfel-Roller ohne Account und ohne Server. Gespeicherte Würfe und Einstellungen bleiben lokal auf dem Gerät (Browser-Speicher); der Verlauf nicht. Per JSON-Export/-Import nimmst du alles auf ein anderes Gerät mit.
 
-## Features (MVP)
+Regelbasis: **D&D 2024 / SRD 5.2** (CC-BY-4.0).
+
+## Features
 
 - Standardwürfel: d4, d6, d8, d10, d12, d20, d100
 - Würfelpool aus beliebigen Würfeln plus Bonus/Malus (z. B. `1d20 + 1d4 + 5`)
-- Vorteil/Nachteil: zwei d20, der bessere bzw. schlechtere zählt (sobald genau ein d20 im Wurf ist)
+- Wurfarten: Frei, Angriff, Attributswurf, Rettungswurf (mit Attribut), Schaden (mit kritischem Treffer: alle Schadenswürfel doppelt)
+- Vorteil/Nachteil: zwei d20, der bessere bzw. schlechtere zählt; mehrere Quellen stapeln nicht, Vorteil + Nachteil heben sich auf
+- Aktive Effekte zum Antippen, die automatisch in Angriffs-, Attributs- und Rettungswürfe einfließen – mit Quelle im Ergebnis:
+  Segnen, Verderben (−1d4), Anleitung, Vergiftet, Verängstigt, Blind, Liegend, Festgesetzt, Gepackt, Unsichtbar,
+  Gelähmt/Betäubt/Bewusstlos (STÄ-/GES-Rettung scheitert), Erschöpfung (−2 pro Stufe), Hilfe erhalten (verbraucht sich),
+  halbe/Dreivierteldeckung
 - Gespeicherte Würfe (z. B. „Langschwert: 1d8 + 3“) per +-Kachel; Bonus/Malus aus dem Feld wird beim Würfeln zusätzlich addiert
 - Hervorhebung von natürlicher 20 / natürlicher 1, sobald genau ein d20 im Pool ist
 - Verlauf der letzten 100 Würfe (nur im Speicher)
@@ -28,9 +35,9 @@ npm run build    # Production-Build nach dist/
 
 Struktur:
 
-- `src/core/` – Würfel- und Session-Logik, framework-unabhängig und getestet
+- `src/core/` – Würfel-, Effekt- und Session-Logik, framework-unabhängig und getestet (`effects.ts` = Regelkatalog)
 - `src/platform/` – Plattform-Grenze (Datei-Export/-Import, lokaler Speicher); hier kommt später die native Variante hin
-- `src/App.svelte`, `src/components/` – Oberfläche
+- `src/App.svelte`, `src/components/`, `src/lib/` – Oberfläche
 - `public/icon.svg` – Quelle für alle App-Icons (`npm run icons` erzeugt die PNGs neu)
 
 ## Deployment

@@ -120,6 +120,33 @@ main {
   .result-total.pop { animation: none; }
 }
 
+/* Roll kind + ability */
+.kinds, .abilities {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  margin: -6px 0;
+}
+.abilities { grid-template-columns: repeat(6, 1fr); }
+.kinds button, .abilities button {
+  min-width: 0;
+  height: 38px;
+  padding: 0 2px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kinds button.selected { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.abilities button { height: 34px; }
+.abilities button.selected { background: var(--text); border-color: var(--text); color: var(--bg); }
+.d20-hint { margin: 0; }
+
 /* Pool */
 .card {
   background: var(--surface);
@@ -128,7 +155,7 @@ main {
   padding: 14px;
 }
 .pool { display: flex; flex-direction: column; gap: 12px; }
-.history-head {
+.section-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -277,6 +304,44 @@ main {
 .mode-tag.disadvantage { background: var(--fumble); }
 .dropped { opacity: 0.55; }
 
+/* Crit switch + effect preview */
+.switch { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; cursor: pointer; }
+.switch input { width: 20px; height: 20px; accent-color: var(--accent); }
+.preview {
+  list-style: none;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.preview li::before { content: "• "; }
+
+/* Active effects */
+.effects { display: flex; flex-direction: column; gap: 10px; }
+.effects .hint { margin: 0; }
+.effect-group { display: flex; flex-direction: column; gap: 6px; }
+.effect-group-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.effect-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.effect-chip {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+.effect-chip.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--surface)); font-weight: 600; }
+.effect-chip.on.relevant { background: var(--accent); color: var(--accent-text); }
+.effect-chip small { opacity: 0.7; }
+.group.effect { color: var(--text); opacity: 0.8; }
+.note { margin-top: 2px; font-size: 0.85rem; }
+.h-total.failed { color: var(--fumble); text-decoration: line-through; }
+
 /* Saved rolls */
 .presets h2 { font-size: 1rem; margin: 0 0 8px; }
 .preset-grid {
@@ -393,7 +458,7 @@ main {
 .danger { color: var(--fumble); border-color: color-mix(in srgb, var(--fumble) 40%, transparent); }
 
 /* History */
-.history h2 { font-size: 1rem; margin: 0; }
+.history h2, .effects h2 { font-size: 1rem; margin: 0; }
 .history ol {
   list-style: none;
   margin: 8px 0 0;

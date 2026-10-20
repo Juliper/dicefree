@@ -1,30 +1,38 @@
 <script lang="ts">
-  import { expression, type DiceGroup } from "../core/dice";
+  import type { Ability, DiceGroup, RollKind } from "../core/dice";
   import { LIMITS, PRESET_NAME_MAX, clamp, makePreset, type Preset } from "../core/session";
+  import { KIND_LABEL, describeRoll } from "../lib/labels";
 
   interface Props {
-    /** Dice currently selected in the main pool (used for new presets / "übernehmen"). */
+    /** The roll currently set up in the main view (used for new presets / "übernehmen"). */
     pool: DiceGroup[];
+    kind: RollKind;
+    ability?: Ability;
     onsave: (p: Preset) => void;
     ondelete: (id: string) => void;
   }
-  let { pool, onsave, ondelete }: Props = $props();
+  let { pool, kind, ability, onsave, ondelete }: Props = $props();
 
   let dialog: HTMLDialogElement;
   let editing = $state<Preset | null>(null);
   let name = $state("");
-  let dice = $state<DiceGroup[]>([]);
+  let draft = $state<{ kind: RollKind; ability?: Ability; dice: DiceGroup[] }>({ kind: "free", dice: [] });
   let bonusText = $state("0");
 
   const bonus = $derived.by(() => {
     const v = Number(bonusText.replace("−", "-").trim());
     return Number.isInteger(v) ? clamp(v, LIMITS.modifier) : 0;
   });
-  const canSave = $derived(dice.length > 0 && name.trim().length > 0);
+  const candidate = $derived(makePreset({ name: name || "x", ...draft, modifier: bonus }));
+  const canSave = $derived(!!candidate && name.trim().length > 0);
+  const describe = (d: { kind: RollKind; ability?: Ability; dice: DiceGroup[] }) =>
+    describeRoll(d.kind, d.ability, d.dice, 0).replace(/ \+0$/, "");
+  const currentDraft = $derived({ kind, ability, dice: pool });
+  const differs = $derived(describe(currentDraft) !== describe(draft));
 
   export function openNew() {
     editing = null;
-    dice = pool;
+    draft = { ...currentDraft };
     name = "";
     bonusText = "0";
     dialog.showModal();
@@ -32,7 +40,7 @@
 
   export function openEdit(p: Preset) {
     editing = p;
-    dice = p.dice;
+    draft = { kind: p.kind, ability: p.ability, dice: p.dice };
     name = p.name;
     bonusText = String(p.modifier);
     dialog.showModal();
@@ -40,7 +48,7 @@
 
   function save(ev: SubmitEvent) {
     ev.preventDefault();
-    const p = makePreset(name, dice, bonus);
+    const p = makePreset({ name, ...draft, modifier: bonus });
     if (!p) return;
     onsave(editing ? { ...p, id: editing.id } : p);
     dialog.close();
@@ -69,15 +77,17 @@
     </label>
 
     <div class="field">
-      <span>Würfel</span>
-      {#if dice.length}
-        <div class="preset-dice">{expression({ dice, modifier: 0 })}</div>
+      <span>Wurf</span>
+      {#if candidate}
+        <div class="preset-dice">
+          {describe(draft)}{#if draft.kind !== "free" && draft.kind !== "attack"}{" "}<small>({KIND_LABEL[draft.kind]})</small>{/if}
+        </div>
       {:else}
         <p class="hint">Wähle zuerst oben die Würfel aus, dann tippe auf +.</p>
       {/if}
-      {#if editing && pool.length && expression({ dice: pool, modifier: 0 }) !== expression({ dice, modifier: 0 })}
-        <button type="button" class="ghost small" onclick={() => (dice = pool)}>
-          Aktuelle Auswahl übernehmen ({expression({ dice: pool, modifier: 0 })})
+      {#if editing && differs && makePreset({ name: "x", ...currentDraft, modifier: 0 })}
+        <button type="button" class="ghost small" onclick={() => (draft = { ...currentDraft })}>
+          Aktuellen Wurf übernehmen ({describe(currentDraft)})
         </button>
       {/if}
     </div>

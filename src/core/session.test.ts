@@ -24,10 +24,14 @@ describe("session import/export", () => {
   it("round-trips through JSON", () => {
     const pool = [{ die: 8 as const, count: 1 }, { die: 6 as const, count: 2 }];
     const s: Session = {
+      ...emptySession(),
+      kind: "damage",
+      crit: true,
+      effects: { bless: 1, exhaustion: 2 },
       pool,
       modifier: -1,
       mode: "advantage",
-      presets: [makePreset("Langschwert", [{ die: 8, count: 1 }], 3)!],
+      presets: [makePreset({ name: "Langschwert", dice: [{ die: 8, count: 1 }], modifier: 3 })!],
       history: [
         roll({ dice: pool, modifier: -1 }),
         roll({ dice: [{ die: 20, count: 1 }], modifier: 5, mode: "advantage", label: "Angriff" }),
@@ -77,7 +81,7 @@ describe("session import/export", () => {
 
 describe("presets", () => {
   it("normalizes dice, trims the name and clamps the bonus", () => {
-    const p = makePreset("  Feuerball  ", [{ die: 6, count: 4 }, { die: 6, count: 4 }], 500)!;
+    const p = makePreset({ name: "  Feuerball  ", dice: [{ die: 6, count: 4 }, { die: 6, count: 4 }], modifier: 500 })!;
     expect(p.name).toBe("Feuerball");
     expect(p.dice).toEqual([{ die: 6, count: 8 }]);
     expect(p.modifier).toBe(99);
@@ -85,8 +89,8 @@ describe("presets", () => {
   });
 
   it("refuses empty pools and names", () => {
-    expect(makePreset("Nichts", [], 0)).toBeNull();
-    expect(makePreset("   ", [{ die: 4, count: 1 }], 0)).toBeNull();
+    expect(makePreset({ name: "Nichts", dice: [], modifier: 0 })).toBeNull();
+    expect(makePreset({ name: "   ", dice: [{ die: 4, count: 1 }], modifier: 0 })).toBeNull();
   });
 
   it("drops invalid presets on import and keeps ids", () => {
@@ -99,17 +103,21 @@ describe("presets", () => {
         { name: 42, dice: [{ die: 4, count: 1 }] },
       ],
     });
-    expect(s.presets).toEqual([{ id: "a", name: "Dolch", dice: [{ die: 4, count: 1 }], modifier: 2 }]);
+    expect(s.presets).toEqual([{ id: "a", name: "Dolch", kind: "free", dice: [{ die: 4, count: 1 }], modifier: 2 }]);
   });
 });
 
 describe("device storage", () => {
   it("keeps settings and presets but not the history", () => {
     const s: Session = {
+      ...emptySession(),
+      kind: "save",
+      ability: "dex",
+      effects: { poisoned: 1 },
       pool: [{ die: 20, count: 1 }],
       modifier: 2,
       mode: "disadvantage",
-      presets: [makePreset("Dolch", [{ die: 4, count: 1 }], 2)!],
+      presets: [makePreset({ name: "Dolch", dice: [{ die: 4, count: 1 }], modifier: 2 })!],
       history: [roll({ dice: [{ die: 6, count: 1 }], modifier: 0 })],
     };
     expect(fromStored(JSON.parse(JSON.stringify(toStored(s))))).toEqual({ ...s, history: [] });
@@ -118,5 +126,21 @@ describe("device storage", () => {
   it("falls back to an empty session on garbage", () => {
     expect(fromStored(null)).toEqual(emptySession());
     expect(fromStored({ format: "other" })).toEqual(emptySession());
+  });
+});
+
+describe("presets with roll kinds", () => {
+  it("forces 1d20 for D20 Tests and keeps the ability for checks/saves", () => {
+    const p = makePreset({ name: "GES-Rettung", kind: "save", ability: "dex", dice: [{ die: 6, count: 3 }], modifier: 4 })!;
+    expect(p.dice).toEqual([{ die: 20, count: 1 }]);
+    expect(p.ability).toBe("dex");
+    const a = makePreset({ name: "Angriff", kind: "attack", ability: "str", dice: [], modifier: 5 })!;
+    expect(a.dice).toEqual([{ die: 20, count: 1 }]);
+    expect(a.ability).toBeUndefined();
+  });
+
+  it("drops unknown effects and clamps effect levels on import", () => {
+    const s = fromFile({ format: "dicefree", settings: { effects: { bless: 1, exhaustion: 9, nonsense: 1, poisoned: 0 } } });
+    expect(s.effects).toEqual({ bless: 1, exhaustion: 5 });
   });
 });
