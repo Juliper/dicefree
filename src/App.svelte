@@ -92,28 +92,28 @@
     {/if}
   </section>
 
-  <section class="pool card" aria-label="Würfelpool">
-    <div class="pool-head">
-      <h2>Würfelpool</h2>
-      {#if canRoll}
-        <button type="button" class="ghost small" onclick={() => (session.pool = [])}>Leeren</button>
-      {/if}
-    </div>
+  <section class="dice" aria-label="Würfel – rechts tippen fügt hinzu, links entfernt">
+    {#each DICE as die (die)}
+      {@const n = countOf(die)}
+      <div class="die" class:active={n > 0}>
+        <span class="die-name">d{die}</span>
+        <span class="die-count" aria-hidden="true">{n ? `×${n}` : ""}</span>
+        <button
+          type="button"
+          class="half minus"
+          aria-label="Einen d{die} entfernen ({n} im Pool)"
+          disabled={!n}
+          onclick={() => changeDie(die, -1)}><span>−</span></button>
+        <button
+          type="button"
+          class="half plus"
+          aria-label="Einen d{die} hinzufügen ({n} im Pool)"
+          onclick={() => changeDie(die, 1)}><span>+</span></button>
+      </div>
+    {/each}
+  </section>
 
-    {#if session.pool.length}
-      <ul class="chips">
-        {#each session.pool as g (g.die)}
-          <li class="chip">
-            <button type="button" aria-label="Einen d{g.die} entfernen" onclick={() => changeDie(g.die, -1)}>−</button>
-            <span>{g.count}d{g.die}</span>
-            <button type="button" aria-label="Einen d{g.die} hinzufügen" onclick={() => changeDie(g.die, 1)}>+</button>
-          </li>
-        {/each}
-      </ul>
-    {:else}
-      <p class="hint">Tippe unten auf Würfel, um sie hinzuzufügen.</p>
-    {/if}
-
+  <section class="pool card" aria-label="Wurf">
     <div class="modifier">
       <label for="modifier-input">Bonus / Malus</label>
       <div class="modifier-input">
@@ -133,18 +133,12 @@
       </div>
     </div>
 
-    <button type="button" class="roll" disabled={!canRoll} onclick={rollPool}>
-      {canRoll ? `Würfeln: ${expression({ dice: session.pool, modifier: session.modifier })}` : "Würfeln"}
-    </button>
-  </section>
-
-  <section class="dice" aria-label="Würfel hinzufügen">
-    {#each DICE as die (die)}
-      <button type="button" class="die" aria-label="d{die} hinzufügen" onclick={() => changeDie(die, 1)}>
-        d{die}
-        {#if countOf(die)}<span class="badge">{countOf(die)}</span>{/if}
+    <div class="roll-row">
+      <button type="button" class="ghost" disabled={!canRoll} onclick={() => (session.pool = [])}>Leeren</button>
+      <button type="button" class="roll" disabled={!canRoll} onclick={rollPool}>
+        {canRoll ? `Würfeln: ${expression({ dice: session.pool, modifier: session.modifier })}` : "Würfel antippen"}
       </button>
-    {/each}
+    </div>
   </section>
 
   <section class="history">
