@@ -2,6 +2,7 @@
   import { crLabel, type Monster } from "../core/monsters";
   import { ENCOUNTER_MAX, PRESET_NAME_MAX, makeSavedEncounter, type SavedEncounter } from "../core/session";
   import MonsterSearch from "./MonsterSearch.svelte";
+  import { ask } from "../lib/dialogs.svelte";
 
   interface Props {
     /** Statblocks already on the device. */
@@ -63,8 +64,8 @@
     dialog.close();
   }
 
-  function remove() {
-    if (editing && confirm(`Kampf „${editing.name}“ löschen?`)) {
+  async function remove() {
+    if (editing && (await ask(`Kampf „${editing.name}“ löschen?`, { confirmLabel: "Löschen", danger: true }))) {
       ondelete(editing.id);
       dialog.close();
     }

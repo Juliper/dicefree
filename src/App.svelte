@@ -45,6 +45,8 @@
   import { loadLocal, saveLocal } from "./platform/storage";
   import { KIND_LABEL, KIND_TAB, describeRoll } from "./lib/labels";
   import PresetDialog from "./components/PresetDialog.svelte";
+  import ConfirmHost from "./components/ConfirmHost.svelte";
+  import { ask, notify } from "./lib/dialogs.svelte";
   import CharacterSheet from "./components/CharacterSheet.svelte";
   import CharacterEditor from "./components/CharacterEditor.svelte";
   import { deathSaveOutcome, newCharacter, type Character, type SheetRoll } from "./core/character";
@@ -177,8 +179,8 @@
     prune();
   }
 
-  function clearCurrentEncounter() {
-    if (!confirm("Alle Monster aus dem Kampf entfernen? Die Spieler bleiben.")) return;
+  async function clearCurrentEncounter() {
+    if (!(await ask("Alle Monster aus dem Kampf entfernen? Die Spieler bleiben.", { confirmLabel: "Leeren", danger: true }))) return;
     Object.assign(session, clearEncounter(session), { tracker: emptyTracker() });
   }
 
@@ -193,8 +195,9 @@
   }
 
   /** Replaces the current fight; initiative starts over (players keep their place in the party). */
-  function startEncounter(saved: SavedEncounter) {
-    if (session.encounter.length && !confirm(`Aktuellen Kampf durch „${saved.name}“ ersetzen?`)) return;
+  async function startEncounter(saved: SavedEncounter) {
+    if (session.encounter.length && !(await ask(`Aktuellen Kampf durch „${saved.name}“ ersetzen?`, { confirmLabel: "Ersetzen" })))
+      return;
     Object.assign(session, loadSavedEncounter(session, saved, "replace"), { tracker: emptyTracker() });
   }
 
@@ -233,8 +236,8 @@
     for (const c of session.encounter) if (session.tracker.values[c.id] === undefined) rollInitiative(c);
   }
 
-  function endCombat() {
-    if (confirm("Kampf beenden? Initiative-Werte und Runden werden zurückgesetzt, Monster und Spieler bleiben.")) {
+  async function endCombat() {
+    if (await ask("Kampf beenden? Initiative-Werte und Runden werden zurückgesetzt, Monster und Spieler bleiben.", { confirmLabel: "Beenden" })) {
       session.tracker = emptyTracker();
     }
   }
@@ -360,7 +363,7 @@
       modText = String(session.modifier);
       show(session.history[0] ?? null);
     } catch (err) {
-      alert(`Import fehlgeschlagen: ${(err as Error).message}`);
+      await notify(`Import fehlgeschlagen: ${(err as Error).message}`);
     }
   }
 
@@ -819,6 +822,7 @@
   </footer>
 </main>
 
+<ConfirmHost />
 <MonsterSearch bind:this={monsterSearch} bestiary={session.bestiary} onadd={addMonster} />
 <EncounterEditor bind:this={encounterEditor} bestiary={session.bestiary} onsave={saveEncounter} ondelete={removeSavedEncounter} />
 

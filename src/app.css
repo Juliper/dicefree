@@ -1037,3 +1037,8 @@ footer.attribution a { color: inherit; }
   background: var(--bg);
   font-size: 1.05rem;
 }
+
+/* In-app confirmation (native confirm() is suppressed in many WebViews) */
+.confirm-dialog { width: min(380px, calc(100vw - 32px)); }
+.confirm-dialog p { margin: 0 0 16px; line-height: 1.45; }
+.primary.danger-fill { background: var(--fumble); color: #fff; }

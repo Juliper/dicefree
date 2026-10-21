@@ -1,5 +1,6 @@
 <script lang="ts">
   import { untrack } from "svelte";
+  import { ask } from "../lib/dialogs.svelte";
   import { ABILITIES, formatModifier, type Ability } from "../core/dice";
   import { ABILITY_LABEL } from "../core/effects";
   import {
@@ -71,8 +72,8 @@
     if (clean) onsave(clean);
   }
 
-  function remove() {
-    if (confirm(`„${character.name}“ wirklich löschen?`)) ondelete(character.id);
+  async function remove() {
+    if (await ask(`„${character.name}“ wirklich löschen?`, { confirmLabel: "Löschen", danger: true })) ondelete(character.id);
   }
 </script>
 
