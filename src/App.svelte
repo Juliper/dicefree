@@ -1,6 +1,5 @@
 <script lang="ts">
   import {
-    ABILITIES,
     DICE,
     roll,
     natural,
@@ -21,7 +20,6 @@
     LIMITS,
     HISTORY_MAX,
     PRESETS_MAX,
-    ROLL_KINDS,
     CHARACTERS_MAX,
     ENCOUNTER_MAX,
     addCombatant,
@@ -77,7 +75,15 @@
     { id: "situation", label: "Situation" },
   ];
 
+  // The dice tab only offers roll kinds that don't need character data; checks and saves
+  // live on the character sheet (saved rolls of those kinds still work).
+  const DICE_VIEW_KINDS: RollKind[] = ["free", "attack", "damage"];
+
   const restored = fromStored(loadLocal());
+  if (!DICE_VIEW_KINDS.includes(restored.kind)) {
+    restored.kind = "free";
+    delete restored.ability;
+  }
   let session = $state(restored);
   let current = $state<RollResult | null>(null);
   let rollId = $state(0); // bumps on every roll to replay the pop animation
@@ -626,32 +632,15 @@
     {/if}
   {:else}
   <div class="kinds" role="tablist" aria-label="Wurfart">
-    {#each ROLL_KINDS as k (k)}
+    {#each DICE_VIEW_KINDS as k (k)}
       <button type="button" role="tab" aria-selected={session.kind === k} class:selected={session.kind === k} onclick={() => setKind(k)}
         >{KIND_TAB[k]}</button
       >
     {/each}
   </div>
 
-  {#if session.kind === "check" || session.kind === "save"}
-    <div class="abilities" role="radiogroup" aria-label="Attribut">
-      {#each ABILITIES as a (a)}
-        <button
-          type="button"
-          role="radio"
-          aria-checked={session.ability === a}
-          class:selected={session.ability === a}
-          onclick={() => (session.ability = session.ability === a ? undefined : a)}>{ABILITY_LABEL[a]}</button
-        >
-      {/each}
-    </div>
-  {/if}
-
   {#if d20Test}
-    <p class="hint d20-hint">
-      {KIND_LABEL[session.kind]}: 1d20 + Bonus/Malus{#if session.kind !== "attack"}{" "}– Attribut wählen, damit z. B. Deckung
-        oder „Festgesetzt“ greifen{/if}.
-    </p>
+    <p class="hint d20-hint">{KIND_LABEL[session.kind]}: 1d20 + Bonus/Malus – aktive Effekte wirken mit.</p>
   {:else}
     <section class="dice" aria-label="Würfel – rechts tippen fügt hinzu, links entfernt">
       {#each DICE as die (die)}

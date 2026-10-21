@@ -8,7 +8,7 @@ Regelbasis: **D&D 2024 / SRD 5.2** (CC-BY-4.0).
 
 - Standardwürfel: d4, d6, d8, d10, d12, d20, d100
 - Würfelpool aus beliebigen Würfeln plus Bonus/Malus (z. B. `1d20 + 1d4 + 5`)
-- Wurfarten: Frei, Angriff, Attributswurf, Rettungswurf (mit Attribut), Schaden (mit kritischem Treffer: alle Schadenswürfel doppelt)
+- Wurfarten im Würfel-Tab: Frei, Angriff, Schaden (mit kritischem Treffer: alle Schadenswürfel doppelt); Attributs- und Rettungswürfe laufen über den Charakterbogen
 - Vorteil/Nachteil: zwei d20, der bessere bzw. schlechtere zählt; mehrere Quellen stapeln nicht, Vorteil + Nachteil heben sich auf
 - Aktive Effekte zum Antippen, die automatisch in Angriffs-, Attributs- und Rettungswürfe einfließen – mit Quelle im Ergebnis:
   Segnen, Verderben (−1d4), Anleitung, Vergiftet, Verängstigt, Blind, Liegend, Festgesetzt, Gepackt, Unsichtbar,

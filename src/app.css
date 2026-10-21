@@ -124,7 +124,7 @@ main {
 /* Roll kind + ability */
 .kinds, .abilities {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 4px;
   margin: -6px 0;
 }
@@ -216,16 +216,16 @@ main {
 .roll:disabled { opacity: 0.35; cursor: default; }
 .roll:not(:disabled):active { transform: scale(0.98); }
 
-/* Dice */
+/* Dice: all seven in one compact row */
 .dice {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
 }
 .die {
   position: relative;
-  aspect-ratio: 1;
-  border-radius: var(--radius);
+  height: 54px;
+  border-radius: 10px;
   background: var(--surface);
   border: 2px solid var(--accent);
   color: var(--accent);
@@ -237,10 +237,10 @@ main {
   -webkit-user-select: none;
 }
 .die.active { background: var(--accent); color: var(--accent-text); }
-.die-name { font-size: 1.2rem; font-weight: 700; pointer-events: none; }
+.die-name { font-size: 0.92rem; font-weight: 700; line-height: 1.1; pointer-events: none; }
 .die-count {
-  min-height: 1.2em;
-  font-size: 0.95rem;
+  min-height: 1.1em;
+  font-size: 0.72rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   pointer-events: none;
@@ -255,16 +255,16 @@ main {
   border: none;
   background: transparent;
   color: inherit;
-  padding: 6px 8px;
+  padding: 2px 4px;
   display: flex;
   align-items: flex-end;
-  font-size: 1rem;
+  font-size: 0.72rem;
   font-weight: 700;
   transition: background 80ms ease;
 }
-.half span { opacity: 0.55; }
-.half.minus { left: 0; justify-content: flex-start; border-radius: var(--radius) 0 0 var(--radius); }
-.half.plus { right: 0; justify-content: flex-end; border-radius: 0 var(--radius) var(--radius) 0; }
+.half span { opacity: 0.5; }
+.half.minus { left: 0; justify-content: flex-start; border-radius: 8px 0 0 8px; }
+.half.plus { right: 0; justify-content: flex-end; border-radius: 0 8px 8px 0; }
 .half:active:not(:disabled) { background: color-mix(in srgb, currentColor 18%, transparent); }
 .half:disabled { cursor: default; }
 .half:disabled span { opacity: 0; }
