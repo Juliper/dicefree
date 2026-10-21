@@ -980,3 +980,60 @@ footer.attribution a { color: inherit; }
   letter-spacing: 0.06em;
 }
 .combatant { scroll-margin-top: 12px; }
+
+/* Prepared fights */
+.saved-encounters { display: flex; flex-direction: column; gap: 8px; }
+.saved-encounters h2 { font-size: 1rem; margin: 0; }
+.saved-encounters .section-head { gap: 6px; }
+.saved-encounters .section-head .spacer { flex: 1; }
+.saved-encounters .ghost.small { white-space: nowrap; }
+.saved-encounters .hint { margin: 0; }
+.saved-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.saved-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.saved-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.saved-info small { color: var(--muted); font-size: 0.8rem; }
+.saved-buttons { display: flex; gap: 6px; }
+.saved-buttons .primary { flex: 1; }
+.saved-buttons .ghost { border-radius: 10px; white-space: nowrap; }
+
+.encounter-rows { list-style: none; margin: 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 4px; }
+.encounter-rows li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 4px 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+.encounter-row-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.encounter-row-name small { color: var(--muted); font-weight: 400; }
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.chip button {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 999px;
+  background: var(--bg);
+  font-size: 1.05rem;
+}

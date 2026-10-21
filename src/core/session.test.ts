@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { roll } from "./dice";
 import { newCharacter } from "./character";
-import { addCombatant, removeCombatant } from "./session";
+import {
+  addCombatant,
+  clearEncounter,
+  countsOf,
+  deleteSavedEncounter,
+  loadSavedEncounter,
+  makeSavedEncounter,
+  removeCombatant,
+  storeSavedEncounter,
+} from "./session";
 import type { Monster } from "./monsters";
 import { HISTORY_MAX, adjustPool, emptySession, fromFile, fromStored, makePreset, toFile, toStored, type Session } from "./session";
 
@@ -167,6 +176,9 @@ describe("characters in the session", () => {
   });
 });
 
+type EncounterState = Pick<Session, "bestiary" | "encounter" | "savedEncounters">;
+const none = (): EncounterState => ({ bestiary: [], encounter: [], savedEncounters: [] });
+
 describe("encounter", () => {
   const goblin = {
     index: "goblin-warrior", name: "Goblin Warrior", size: "Small", type: "fey", cr: 0.25, xp: 50, ac: 15, hp: 10,
@@ -175,7 +187,7 @@ describe("encounter", () => {
   } satisfies Monster;
 
   it("numbers duplicates and shares the statblock", () => {
-    let s = addCombatant({ bestiary: [], encounter: [] }, goblin);
+    let s = addCombatant(none(), goblin);
     s = addCombatant(s, goblin);
     expect(s.encounter.map((c) => c.label)).toEqual(["Goblin Warrior", "Goblin Warrior 2"]);
     expect(s.bestiary).toHaveLength(1);
@@ -183,13 +195,13 @@ describe("encounter", () => {
   });
 
   it("forgets unused statblocks on removal", () => {
-    let s = addCombatant({ bestiary: [], encounter: [] }, goblin);
+    let s = addCombatant(none(), goblin);
     s = removeCombatant(s, s.encounter[0].id);
-    expect(s).toEqual({ bestiary: [], encounter: [] });
+    expect(s).toEqual({ bestiary: [], encounter: [], savedEncounters: [] });
   });
 
   it("round-trips through storage and drops combatants without statblock", () => {
-    const enc = addCombatant({ bestiary: [], encounter: [] }, goblin);
+    const enc = addCombatant(none(), goblin);
     enc.encounter[0].hp = 3;
     enc.encounter[0].effects = { poisoned: 1 };
     const s: Session = { ...emptySession(), view: "dm", ...enc };
@@ -212,5 +224,85 @@ describe("party and initiative tracker", () => {
     const back = fromStored(JSON.parse(JSON.stringify(toStored(s))));
     expect(back.party).toEqual([{ id: "p1", name: "Aria" }]);
     expect(back.tracker).toEqual({ values: { p1: 17 }, round: 2, turnId: "p1" });
+  });
+});
+
+describe("saved encounters", () => {
+  const mk = (index: string, name: string, hp = 10) =>
+    ({
+      index, name, size: "Small", type: "fey", cr: 0.25, xp: 50, ac: 15, hp, hitDice: "3d6", speed: "30 ft.",
+      scores: { str: 8, dex: 15, con: 10, int: 10, wis: 8, cha: 8 }, saves: {}, skills: [], senses: "", languages: "",
+      resistances: [], immunities: [], vulnerabilities: [], conditionImmunities: [], actions: [],
+    }) satisfies Monster;
+  const goblin = mk("goblin-warrior", "Goblin Warrior");
+  const boss = mk("goblin-boss", "Goblin Boss", 21);
+  const empty = none();
+
+  it("builds from counts, merging duplicates and ignoring zero", () => {
+    const e = makeSavedEncounter("  Hinterhalt ", [
+      { index: "goblin-warrior", count: 2 },
+      { index: "goblin-boss", count: 0 },
+      { index: "goblin-warrior", count: 2 },
+    ])!;
+    expect(e).toMatchObject({ name: "Hinterhalt", monsters: [{ index: "goblin-warrior", count: 4 }] });
+    expect(makeSavedEncounter("", [{ index: "x", count: 1 }])).toBeNull();
+    expect(makeSavedEncounter("Leer", [])).toBeNull();
+  });
+
+  it("captures the current encounter as counts", () => {
+    let s = addCombatant(empty, goblin);
+    s = addCombatant(s, boss);
+    s = addCombatant(s, goblin);
+    expect(countsOf(s.encounter)).toEqual([
+      { index: "goblin-warrior", count: 2 },
+      { index: "goblin-boss", count: 1 },
+    ]);
+  });
+
+  it("keeps statblocks of saved fights when the encounter is cleared", () => {
+    const saved = makeSavedEncounter("Hinterhalt", [{ index: "goblin-warrior", count: 3 }])!;
+    let s = storeSavedEncounter(empty, saved, [goblin]);
+    s = addCombatant(s, boss);
+    s = clearEncounter(s);
+    expect(s.bestiary).toEqual([goblin]);
+    s = deleteSavedEncounter(s, saved.id);
+    expect(s.bestiary).toEqual([]);
+  });
+
+  it("loads by replacing or appending, numbering duplicates", () => {
+    const saved = makeSavedEncounter("Hinterhalt", [
+      { index: "goblin-warrior", count: 2 },
+      { index: "goblin-boss", count: 1 },
+    ])!;
+    let s = storeSavedEncounter(empty, saved, [goblin, boss]);
+    s = addCombatant(s, goblin);
+    const replaced = loadSavedEncounter(s, saved, "replace");
+    expect(replaced.encounter.map((c) => c.label)).toEqual(["Goblin Warrior", "Goblin Warrior 2", "Goblin Boss"]);
+    const appended = loadSavedEncounter(s, saved, "append");
+    expect(appended.encounter.map((c) => c.label)).toEqual([
+      "Goblin Warrior",
+      "Goblin Warrior 2",
+      "Goblin Warrior 3",
+      "Goblin Boss",
+    ]);
+    expect(replaced.encounter[2]).toMatchObject({ hp: 21, maxHp: 21 });
+  });
+
+  it("updates an existing saved fight by id", () => {
+    const saved = makeSavedEncounter("A", [{ index: "goblin-warrior", count: 1 }])!;
+    let s = storeSavedEncounter(empty, saved, [goblin]);
+    s = storeSavedEncounter(s, { ...saved, name: "B" }, []);
+    expect(s.savedEncounters).toHaveLength(1);
+    expect(s.savedEncounters[0].name).toBe("B");
+  });
+
+  it("round-trips through storage and drops monsters without statblock", () => {
+    const saved = makeSavedEncounter("Hinterhalt", [{ index: "goblin-warrior", count: 2 }])!;
+    const s: Session = { ...emptySession(), ...storeSavedEncounter(empty, saved, [goblin]) };
+    const back = fromStored(JSON.parse(JSON.stringify(toStored(s))));
+    expect(back.savedEncounters).toEqual([saved]);
+    expect(back.bestiary).toEqual([goblin]);
+    const orphan = fromFile({ format: "dicefree", bestiary: [], savedEncounters: [saved] });
+    expect(orphan.savedEncounters).toEqual([]);
   });
 });

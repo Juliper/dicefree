@@ -24,9 +24,11 @@ export const PRESETS_MAX = 50;
 export const PRESET_NAME_MAX = 40;
 
 const FORMAT = "dicefree";
-const VERSION = 7;
+const VERSION = 8;
 export const CHARACTERS_MAX = 20;
 export const ENCOUNTER_MAX = 40;
+export const SAVED_ENCOUNTERS_MAX = 50;
+const BESTIARY_MAX = 300;
 
 export const ROLL_KINDS: readonly RollKind[] = ["free", "attack", "check", "save", "damage"];
 const isKind = (k: unknown): k is RollKind => ROLL_KINDS.includes(k as RollKind);
@@ -54,6 +56,13 @@ export interface Settings {
 
 export type View = "dice" | "character" | "dm";
 
+/** A prepared fight: a name and how many of which monster. */
+export interface SavedEncounter {
+  id: string;
+  name: string;
+  monsters: { index: string; count: number }[];
+}
+
 /** One monster in the current encounter; several can share a statblock. */
 export interface Combatant {
   id: string;
@@ -69,9 +78,10 @@ export interface Session extends Settings {
   presets: Preset[];
   characters: Character[];
   activeCharacterId?: string;
-  /** Statblocks used in the encounter, by index. */
+  /** Statblocks used by the current encounter or a saved one, by index. */
   bestiary: Monster[];
   encounter: Combatant[];
+  savedEncounters: SavedEncounter[];
   /** Players the DM tracks in initiative (names only). */
   party: PartyMember[];
   tracker: Tracker;
@@ -87,6 +97,7 @@ export interface SessionFile {
   characters: Character[];
   bestiary: Monster[];
   encounter: Combatant[];
+  savedEncounters: SavedEncounter[];
   party: PartyMember[];
   tracker: Tracker;
   history: RollResult[];
@@ -105,6 +116,7 @@ export function emptySession(): Session {
     characters: [],
     bestiary: [],
     encounter: [],
+    savedEncounters: [],
     party: [],
     tracker: emptyTracker(),
     history: [],
@@ -169,6 +181,7 @@ export function toFile(s: Session): SessionFile {
     characters: s.characters,
     bestiary: s.bestiary,
     encounter: s.encounter,
+    savedEncounters: s.savedEncounters,
     party: s.party,
     tracker: s.tracker,
     history: s.history,
@@ -176,19 +189,85 @@ export function toFile(s: Session): SessionFile {
 }
 
 /** Adds a monster to the encounter, numbering duplicates ("Goblin 2"). */
-export function addCombatant(s: Pick<Session, "bestiary" | "encounter">, m: Monster): Pick<Session, "bestiary" | "encounter"> {
+export function addCombatant<T extends Pick<Session, "bestiary" | "encounter">>(s: T, m: Monster): T {
   if (s.encounter.length >= ENCOUNTER_MAX) return s;
   const bestiary = s.bestiary.some((x) => x.index === m.index) ? s.bestiary : [...s.bestiary, m];
   const same = s.encounter.filter((c) => c.index === m.index);
   const label = same.length ? `${m.name} ${same.length + 1}` : m.name;
   const combatant: Combatant = { id: newId(), index: m.index, label, hp: m.hp, maxHp: m.hp, effects: {} };
-  return { bestiary, encounter: [...s.encounter, combatant] };
+  return { ...s, bestiary, encounter: [...s.encounter, combatant] };
 }
 
 /** Removes a combatant and forgets statblocks nobody uses any more. */
-export function removeCombatant(s: Pick<Session, "bestiary" | "encounter">, id: string): Pick<Session, "bestiary" | "encounter"> {
-  const encounter = s.encounter.filter((c) => c.id !== id);
-  return { encounter, bestiary: s.bestiary.filter((m) => encounter.some((c) => c.index === m.index)) };
+type EncounterState = Pick<Session, "bestiary" | "encounter" | "savedEncounters">;
+
+/** Keeps only statblocks that the current encounter or a saved one still needs. */
+export function pruneBestiary<T extends EncounterState>(s: T): T {
+  const used = new Set([...s.encounter.map((c) => c.index), ...s.savedEncounters.flatMap((e) => e.monsters.map((m) => m.index))]);
+  return { ...s, bestiary: s.bestiary.filter((m) => used.has(m.index)) };
+}
+
+export function removeCombatant(s: EncounterState, id: string): EncounterState {
+  return pruneBestiary({ ...s, encounter: s.encounter.filter((c) => c.id !== id) });
+}
+
+export function clearEncounter(s: EncounterState): EncounterState {
+  return pruneBestiary({ ...s, encounter: [] });
+}
+
+/** Builds a saved encounter; returns null without name or monsters. */
+export function makeSavedEncounter(name: string, monsters: { index: string; count: number }[]): SavedEncounter | null {
+  const counts = new Map<string, number>();
+  for (const m of monsters) if (m.count > 0) counts.set(m.index, Math.min(ENCOUNTER_MAX, (counts.get(m.index) ?? 0) + Math.trunc(m.count)));
+  const trimmed = name.trim().slice(0, PRESET_NAME_MAX);
+  if (!trimmed || !counts.size) return null;
+  return { id: newId(), name: trimmed, monsters: [...counts].map(([index, count]) => ({ index, count })) };
+}
+
+/** Monster counts of the current encounter, in order of first appearance. */
+export function countsOf(encounter: Combatant[]): { index: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const c of encounter) counts.set(c.index, (counts.get(c.index) ?? 0) + 1);
+  return [...counts].map(([index, count]) => ({ index, count }));
+}
+
+/** Saves (or replaces by id) a prepared fight together with the statblocks it needs. */
+export function storeSavedEncounter(s: EncounterState, saved: SavedEncounter, statblocks: Monster[]): EncounterState {
+  const known = new Set(s.bestiary.map((m) => m.index));
+  const bestiary = [...s.bestiary, ...statblocks.filter((m) => !known.has(m.index) && (known.add(m.index), true))];
+  const exists = s.savedEncounters.some((e) => e.id === saved.id);
+  const savedEncounters = exists
+    ? s.savedEncounters.map((e) => (e.id === saved.id ? saved : e))
+    : [...s.savedEncounters, saved].slice(0, SAVED_ENCOUNTERS_MAX);
+  return pruneBestiary({ ...s, bestiary, savedEncounters });
+}
+
+export function deleteSavedEncounter(s: EncounterState, id: string): EncounterState {
+  return pruneBestiary({ ...s, savedEncounters: s.savedEncounters.filter((e) => e.id !== id) });
+}
+
+/** Puts a saved fight into the current encounter, either replacing it or adding to it. */
+export function loadSavedEncounter(s: EncounterState, saved: SavedEncounter, mode: "replace" | "append"): EncounterState {
+  let out: EncounterState = mode === "replace" ? { ...s, encounter: [] } : s;
+  for (const { index, count } of saved.monsters) {
+    const m = out.bestiary.find((x) => x.index === index);
+    if (!m) continue;
+    for (let i = 0; i < count; i++) out = addCombatant(out, m);
+  }
+  return pruneBestiary(out);
+}
+
+function parseSavedEncounter(raw: unknown, known: Set<string>): SavedEncounter | null {
+  const e = raw as Record<string, any> | null;
+  if (!e || typeof e.name !== "string" || !Array.isArray(e.monsters)) return null;
+  const saved = makeSavedEncounter(
+    e.name,
+    e.monsters
+      .filter((m: any) => typeof m?.index === "string" && known.has(m.index) && Number.isInteger(m?.count))
+      .map((m: any) => ({ index: m.index, count: m.count })),
+  );
+  if (saved && typeof e.id === "string" && e.id) saved.id = e.id.slice(0, 64);
+  return saved;
 }
 
 function parseCombatant(raw: unknown, known: Set<string>): Combatant | null {
@@ -290,7 +369,7 @@ const parseList = <T>(raw: unknown, parse: (x: unknown) => T | null, max: number
     .filter((x): x is T => x !== null)
     .slice(0, max);
 
-/** Parses an exported file (v1–v7). Throws on foreign files; silently drops malformed entries. */
+/** Parses an exported file (v1–v8). Throws on foreign files; silently drops malformed entries. */
 export function fromFile(raw: unknown): Session {
   const data = raw as {
     format?: unknown;
@@ -299,6 +378,7 @@ export function fromFile(raw: unknown): Session {
     characters?: unknown;
     bestiary?: unknown;
     encounter?: unknown;
+    savedEncounters?: unknown;
     party?: unknown;
     tracker?: unknown;
     history?: unknown;
@@ -306,9 +386,10 @@ export function fromFile(raw: unknown): Session {
   if (data?.format !== FORMAT) throw new Error("Keine Dicefree-Datei.");
   const st = data.settings ?? {};
   const characters = parseList(data.characters, parseCharacter, CHARACTERS_MAX);
-  const bestiary = parseList(data.bestiary, parseStoredMonster, ENCOUNTER_MAX);
+  const bestiary = parseList(data.bestiary, parseStoredMonster, BESTIARY_MAX);
   const known = new Set(bestiary.map((m) => m.index));
   const encounter = parseList(data.encounter, (c) => parseCombatant(c, known), ENCOUNTER_MAX);
+  const savedEncounters = parseList(data.savedEncounters, (e) => parseSavedEncounter(e, known), SAVED_ENCOUNTERS_MAX);
   const party = parseParty(data.party);
   const participants = new Set([...party.map((p) => p.id), ...encounter.map((c) => c.id)]);
   const session: Session = {
@@ -316,6 +397,7 @@ export function fromFile(raw: unknown): Session {
     characters,
     bestiary,
     encounter,
+    savedEncounters,
     party,
     tracker: parseTracker(data.tracker, participants),
     kind: isKind(st.kind) ? st.kind : "free",
@@ -350,6 +432,7 @@ export function toStored(s: Session): SessionFile {
     activeCharacterId: s.activeCharacterId,
     bestiary: s.bestiary,
     encounter: s.encounter,
+    savedEncounters: s.savedEncounters,
     party: s.party,
     tracker: s.tracker,
     history: [],

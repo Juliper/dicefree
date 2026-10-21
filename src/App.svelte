@@ -25,7 +25,13 @@
     CHARACTERS_MAX,
     ENCOUNTER_MAX,
     addCombatant,
+    clearEncounter,
+    countsOf,
+    deleteSavedEncounter,
+    loadSavedEncounter,
     removeCombatant,
+    storeSavedEncounter,
+    type SavedEncounter,
     adjustPool,
     clamp,
     toFile,
@@ -46,6 +52,7 @@
   import MonsterSearch from "./components/MonsterSearch.svelte";
   import { monsterCheckRoll, rechargeOutcome, type Monster, type MonsterRoll } from "./core/monsters";
   import InitiativeTracker from "./components/InitiativeTracker.svelte";
+  import EncounterEditor from "./components/EncounterEditor.svelte";
   import {
     emptyTracker,
     initiativeOrder,
@@ -76,6 +83,7 @@
   let presetDialog: PresetDialog;
   let editingCharacter = $state(false);
   let monsterSearch: MonsterSearch;
+  let encounterEditor: EncounterEditor;
   const statblock = (index: string) => session.bestiary.find((m) => m.index === index);
   const encounterXp = $derived(session.encounter.reduce((n, c) => n + (statblock(c.index)?.xp ?? 0), 0));
   const initEntries = $derived<InitEntry[]>([
@@ -169,10 +177,36 @@
     prune();
   }
 
-  function clearEncounter() {
+  function clearCurrentEncounter() {
     if (!confirm("Alle Monster aus dem Kampf entfernen? Die Spieler bleiben.")) return;
-    Object.assign(session, { encounter: [], bestiary: [], tracker: emptyTracker() });
+    Object.assign(session, clearEncounter(session), { tracker: emptyTracker() });
   }
+
+  // --- Prepared fights ---
+
+  function saveEncounter(saved: SavedEncounter, statblocks: Monster[]) {
+    Object.assign(session, storeSavedEncounter(session, saved, statblocks));
+  }
+
+  function removeSavedEncounter(id: string) {
+    Object.assign(session, deleteSavedEncounter(session, id));
+  }
+
+  /** Replaces the current fight; initiative starts over (players keep their place in the party). */
+  function startEncounter(saved: SavedEncounter) {
+    if (session.encounter.length && !confirm(`Aktuellen Kampf durch „${saved.name}“ ersetzen?`)) return;
+    Object.assign(session, loadSavedEncounter(session, saved, "replace"), { tracker: emptyTracker() });
+  }
+
+  /** Adds the prepared monsters to the running fight (e.g. reinforcements). */
+  function appendEncounter(saved: SavedEncounter) {
+    Object.assign(session, loadSavedEncounter(session, saved, "append"));
+  }
+
+  const savedSummary = (saved: SavedEncounter) =>
+    saved.monsters.map((m) => `${m.count}× ${statblock(m.index)?.name ?? m.index}`).join(" · ");
+  const savedXp = (saved: SavedEncounter) =>
+    saved.monsters.reduce((n, m) => n + m.count * (statblock(m.index)?.xp ?? 0), 0);
 
   // --- Initiative ---
 
@@ -499,10 +533,44 @@
       </div>
       <span class="spacer"></span>
       {#if session.encounter.length}
-        <button type="button" class="ghost small" onclick={clearEncounter}>Leeren</button>
+        <button type="button" class="ghost small" onclick={clearCurrentEncounter}>Leeren</button>
       {/if}
       {#if session.encounter.length < ENCOUNTER_MAX}
         <button type="button" class="ghost small" onclick={() => monsterSearch.open()}>+ Monster</button>
+      {/if}
+    </section>
+
+    <section class="saved-encounters" aria-label="Vorbereitete Kämpfe">
+      <div class="section-head">
+        <h2>Vorbereitete Kämpfe</h2>
+        <span class="spacer"></span>
+        {#if session.encounter.length}
+          <button type="button" class="ghost small" onclick={() => encounterEditor.openNew(countsOf(session.encounter))}
+            >Aktuellen speichern</button
+          >
+        {/if}
+        <button type="button" class="ghost small" onclick={() => encounterEditor.openNew()}>+ Neu</button>
+      </div>
+      {#if session.savedEncounters.length}
+        <ul class="saved-list">
+          {#each session.savedEncounters as saved (saved.id)}
+            <li class="saved-card">
+              <div class="saved-info">
+                <b>{saved.name}</b>
+                <small>{savedSummary(saved)} · {savedXp(saved).toLocaleString("de-DE")} EP</small>
+              </div>
+              <div class="saved-buttons">
+                <button type="button" class="primary" onclick={() => startEncounter(saved)}>Starten</button>
+                <button type="button" class="ghost" onclick={() => appendEncounter(saved)} aria-label="{saved.name} zum laufenden Kampf hinzufügen"
+                  >+ Dazu</button
+                >
+                <button type="button" class="ghost" aria-label="{saved.name} bearbeiten" onclick={() => encounterEditor.openEdit(saved)}>⋯</button>
+              </div>
+            </li>
+          {/each}
+        </ul>
+      {:else}
+        <p class="hint">Bereite Kämpfe vor, dann startest du sie am Tisch mit einem Tipp – auch offline.</p>
       {/if}
     </section>
 
@@ -752,6 +820,7 @@
 </main>
 
 <MonsterSearch bind:this={monsterSearch} bestiary={session.bestiary} onadd={addMonster} />
+<EncounterEditor bind:this={encounterEditor} bestiary={session.bestiary} onsave={saveEncounter} ondelete={removeSavedEncounter} />
 
 <PresetDialog
   bind:this={presetDialog}

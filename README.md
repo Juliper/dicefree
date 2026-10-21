@@ -29,6 +29,9 @@ Regelbasis: **D&D 2024 / SRD 5.2** (CC-BY-4.0).
   Reaktionen, legendäre Aktionen und Zauberwirken. Ein Tipp würfelt Angriff, Schaden (alle Schadensarten, mit Krit),
   Aufladung (mit Auswertung), Initiative, Attributs- und Rettungswürfe sowie Fertigkeiten. SG-Fähigkeiten wie Odem
   zeigen Rettungswurf, SG und „halber Schaden“. Zustände und Effekte gelten pro Monster.
+- **Vorbereitete Kämpfe** (Spielleiter): Kämpfe mit Namen und Monster-Anzahl speichern – neu zusammenstellen oder den
+  laufenden Kampf übernehmen. Am Tisch mit „Starten“ laden (ersetzt den Kampf) oder mit „+ Dazu“ als Verstärkung
+  anhängen. Die Statblöcke bleiben auf dem Gerät, also auch offline nutzbar.
 - **Initiative-Tracker** (Spielleiter): Spieler per Name anlegen (bleiben über Kämpfe hinweg), ihre angesagten Werte
   eintragen, Monster mit einem Tipp würfeln (d20 + GES, Zustände wirken mit) oder von Hand setzen. Automatisch
   sortiert; „Weiter“ zeigt, wer dran ist, zählt Runden und überspringt kampfunfähige Monster. Die aktive Monsterkarte
