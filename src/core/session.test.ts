@@ -201,3 +201,16 @@ describe("encounter", () => {
     expect(orphan.encounter).toEqual([]);
   });
 });
+
+describe("party and initiative tracker", () => {
+  it("round-trips the party and tracker, dropping values of unknown participants", () => {
+    const s: Session = {
+      ...emptySession(),
+      party: [{ id: "p1", name: "Aria" }],
+      tracker: { values: { p1: 17, ghost: 3 }, round: 2, turnId: "p1" },
+    };
+    const back = fromStored(JSON.parse(JSON.stringify(toStored(s))));
+    expect(back.party).toEqual([{ id: "p1", name: "Aria" }]);
+    expect(back.tracker).toEqual({ values: { p1: 17 }, round: 2, turnId: "p1" });
+  });
+});

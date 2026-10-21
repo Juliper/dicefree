@@ -44,7 +44,16 @@
   import { deathSaveOutcome, newCharacter, type Character, type SheetRoll } from "./core/character";
   import CombatantCard from "./components/CombatantCard.svelte";
   import MonsterSearch from "./components/MonsterSearch.svelte";
-  import { rechargeOutcome, type Monster, type MonsterRoll } from "./core/monsters";
+  import { monsterCheckRoll, rechargeOutcome, type Monster, type MonsterRoll } from "./core/monsters";
+  import InitiativeTracker from "./components/InitiativeTracker.svelte";
+  import {
+    emptyTracker,
+    initiativeOrder,
+    nextTurn,
+    pruneTracker,
+    setInitiative,
+    type InitEntry,
+  } from "./core/initiative";
   import type { ActiveEffects } from "./core/effects";
 
   const MODES: { value: RollMode; label: string }[] = [
@@ -69,6 +78,16 @@
   let monsterSearch: MonsterSearch;
   const statblock = (index: string) => session.bestiary.find((m) => m.index === index);
   const encounterXp = $derived(session.encounter.reduce((n, c) => n + (statblock(c.index)?.xp ?? 0), 0));
+  const initEntries = $derived<InitEntry[]>([
+    ...session.party.map((p) => ({ id: p.id, name: p.name, kind: "player" as const, init: session.tracker.values[p.id] ?? null, down: false })),
+    ...session.encounter.map((c) => ({
+      id: c.id,
+      name: c.label,
+      kind: "monster" as const,
+      init: session.tracker.values[c.id] ?? null,
+      down: c.hp <= 0,
+    })),
+  ]);
 
   const activeCharacter = $derived(
     session.characters.find((c) => c.id === session.activeCharacterId) ?? session.characters[0],
@@ -133,12 +152,61 @@
     session.encounter = session.encounter.map((x) => (x.id === c.id ? c : x));
   }
 
+  /** Removing whoever is on turn passes the turn on first, then forgets their initiative. */
+  function removeParticipant(id: string) {
+    if (session.tracker.turnId === id) session.tracker = nextTurn(session.tracker, initiativeOrder(initEntries));
+    if (session.tracker.turnId === id) session.tracker = emptyTracker(); // nobody else left
+  }
+
+  function prune() {
+    const ids = new Set([...session.party.map((p) => p.id), ...session.encounter.map((c) => c.id)]);
+    session.tracker = pruneTracker(session.tracker, ids);
+  }
+
   function removeMonster(id: string) {
+    removeParticipant(id);
     Object.assign(session, removeCombatant(session, id));
+    prune();
   }
 
   function clearEncounter() {
-    if (confirm("Alle Monster aus dem Kampf entfernen?")) Object.assign(session, { encounter: [], bestiary: [] });
+    if (!confirm("Alle Monster aus dem Kampf entfernen? Die Spieler bleiben.")) return;
+    Object.assign(session, { encounter: [], bestiary: [], tracker: emptyTracker() });
+  }
+
+  // --- Initiative ---
+
+  function addPlayer(name: string) {
+    const id = typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+    session.party = [...session.party, { id, name: name.slice(0, 40) }].slice(0, 20);
+  }
+
+  function removePlayer(id: string) {
+    removeParticipant(id);
+    session.party = session.party.filter((p) => p.id !== id);
+    prune();
+  }
+
+  /** Initiative is a Dexterity check; the combatant's own conditions apply. */
+  function rollInitiative(c: Combatant) {
+    const m = statblock(c.index);
+    if (!m) return;
+    const { result } = doRoll(monsterCheckRoll(m, `${c.label}: Initiative`, "dex"), c.effects);
+    session.tracker = setInitiative(session.tracker, c.id, result.total);
+  }
+
+  function rollMissingInitiative() {
+    for (const c of session.encounter) if (session.tracker.values[c.id] === undefined) rollInitiative(c);
+  }
+
+  function endCombat() {
+    if (confirm("Kampf beenden? Initiative-Werte und Runden werden zurückgesetzt, Monster und Spieler bleiben.")) {
+      session.tracker = emptyTracker();
+    }
+  }
+
+  function focusParticipant(id: string) {
+    document.getElementById(`combatant-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function rollForCombatant(c: Combatant, r: MonsterRoll, effects: ActiveEffects) {
@@ -438,6 +506,17 @@
       {/if}
     </section>
 
+    <InitiativeTracker
+      entries={initEntries}
+      tracker={session.tracker}
+      onchange={(t) => (session.tracker = t)}
+      onaddplayer={addPlayer}
+      onremoveplayer={removePlayer}
+      onrollmonsters={rollMissingInitiative}
+      onend={endCombat}
+      onselect={focusParticipant}
+    />
+
     {#if session.encounter.length}
       {@render situational()}
       {#each session.encounter as c (c.id)}
@@ -448,8 +527,11 @@
             monster={m}
             onroll={(r, effects) => rollForCombatant(c, r, effects)}
             onrollhp={(r) => rollHitPoints(c, r)}
+            onrollinit={() => rollInitiative(c)}
             onupdate={updateCombatant}
             onremove={removeMonster}
+            current={session.tracker.turnId === c.id}
+            initiative={session.tracker.values[c.id]}
           />
         {/if}
       {/each}

@@ -12,6 +12,7 @@ import {
 import { parseActiveEffects, type ActiveEffects } from "./effects";
 import { parseCharacter, type Character } from "./character";
 import { parseStoredMonster, type Monster } from "./monsters";
+import { emptyTracker, parseParty, parseTracker, type PartyMember, type Tracker } from "./initiative";
 
 export const LIMITS = {
   groupCount: [0, 50],
@@ -23,7 +24,7 @@ export const PRESETS_MAX = 50;
 export const PRESET_NAME_MAX = 40;
 
 const FORMAT = "dicefree";
-const VERSION = 6;
+const VERSION = 7;
 export const CHARACTERS_MAX = 20;
 export const ENCOUNTER_MAX = 40;
 
@@ -71,6 +72,9 @@ export interface Session extends Settings {
   /** Statblocks used in the encounter, by index. */
   bestiary: Monster[];
   encounter: Combatant[];
+  /** Players the DM tracks in initiative (names only). */
+  party: PartyMember[];
+  tracker: Tracker;
   history: RollResult[]; // newest first
 }
 
@@ -83,6 +87,8 @@ export interface SessionFile {
   characters: Character[];
   bestiary: Monster[];
   encounter: Combatant[];
+  party: PartyMember[];
+  tracker: Tracker;
   history: RollResult[];
 }
 
@@ -99,6 +105,8 @@ export function emptySession(): Session {
     characters: [],
     bestiary: [],
     encounter: [],
+    party: [],
+    tracker: emptyTracker(),
     history: [],
   };
 }
@@ -161,6 +169,8 @@ export function toFile(s: Session): SessionFile {
     characters: s.characters,
     bestiary: s.bestiary,
     encounter: s.encounter,
+    party: s.party,
+    tracker: s.tracker,
     history: s.history,
   };
 }
@@ -280,7 +290,7 @@ const parseList = <T>(raw: unknown, parse: (x: unknown) => T | null, max: number
     .filter((x): x is T => x !== null)
     .slice(0, max);
 
-/** Parses an exported file (v1–v6). Throws on foreign files; silently drops malformed entries. */
+/** Parses an exported file (v1–v7). Throws on foreign files; silently drops malformed entries. */
 export function fromFile(raw: unknown): Session {
   const data = raw as {
     format?: unknown;
@@ -289,6 +299,8 @@ export function fromFile(raw: unknown): Session {
     characters?: unknown;
     bestiary?: unknown;
     encounter?: unknown;
+    party?: unknown;
+    tracker?: unknown;
     history?: unknown;
   } | null;
   if (data?.format !== FORMAT) throw new Error("Keine Dicefree-Datei.");
@@ -296,11 +308,16 @@ export function fromFile(raw: unknown): Session {
   const characters = parseList(data.characters, parseCharacter, CHARACTERS_MAX);
   const bestiary = parseList(data.bestiary, parseStoredMonster, ENCOUNTER_MAX);
   const known = new Set(bestiary.map((m) => m.index));
+  const encounter = parseList(data.encounter, (c) => parseCombatant(c, known), ENCOUNTER_MAX);
+  const party = parseParty(data.party);
+  const participants = new Set([...party.map((p) => p.id), ...encounter.map((c) => c.id)]);
   const session: Session = {
     view: st.view === "character" || st.view === "dm" ? st.view : "dice",
     characters,
     bestiary,
-    encounter: parseList(data.encounter, (c) => parseCombatant(c, known), ENCOUNTER_MAX),
+    encounter,
+    party,
+    tracker: parseTracker(data.tracker, participants),
     kind: isKind(st.kind) ? st.kind : "free",
     pool: parsePool(st.pool),
     modifier: intIn(st.modifier, LIMITS.modifier, 0),
@@ -333,6 +350,8 @@ export function toStored(s: Session): SessionFile {
     activeCharacterId: s.activeCharacterId,
     bestiary: s.bestiary,
     encounter: s.encounter,
+    party: s.party,
+    tracker: s.tracker,
     history: [],
   });
 }

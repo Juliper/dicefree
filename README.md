@@ -29,6 +29,10 @@ Regelbasis: **D&D 2024 / SRD 5.2** (CC-BY-4.0).
   Reaktionen, legendäre Aktionen und Zauberwirken. Ein Tipp würfelt Angriff, Schaden (alle Schadensarten, mit Krit),
   Aufladung (mit Auswertung), Initiative, Attributs- und Rettungswürfe sowie Fertigkeiten. SG-Fähigkeiten wie Odem
   zeigen Rettungswurf, SG und „halber Schaden“. Zustände und Effekte gelten pro Monster.
+- **Initiative-Tracker** (Spielleiter): Spieler per Name anlegen (bleiben über Kämpfe hinweg), ihre angesagten Werte
+  eintragen, Monster mit einem Tipp würfeln (d20 + GES, Zustände wirken mit) oder von Hand setzen. Automatisch
+  sortiert; „Weiter“ zeigt, wer dran ist, zählt Runden und überspringt kampfunfähige Monster. Die aktive Monsterkarte
+  wird hervorgehoben.
 - Verlauf der letzten 100 Würfe (nur im Speicher)
 - JSON-Import/-Export
 - Fairer Zufall über `crypto.getRandomValues` mit Rejection Sampling
@@ -64,7 +68,7 @@ Jeder Push auf `main` baut und veröffentlicht die Seite per GitHub Action (`.gi
 
 ## Roadmap
 
-- Initiative-Reihenfolge und Runden-Tracking im Kampf
+- Erweitertes Highlighting im Kampf (z. B. Reaktionen/legendäre Aktionen am Rundenende)
 - Spieler-Charaktere (RK, TP) im Kampf, Treffer/Verfehlt gegen RK für den Spielleiter
 - Dauer von Zuständen/Effekten in Runden, Konzentrations-Erinnerung bei Schaden
 - Optional: Android-APK über Capacitor als GitHub Release

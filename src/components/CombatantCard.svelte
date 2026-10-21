@@ -30,10 +30,15 @@
     onroll: (r: MonsterRoll, effects: ActiveEffects) => void;
     /** Rolls whose result should become this combatant's hit points. */
     onrollhp: (r: MonsterRoll) => void;
+    /** Rolls initiative and enters it into the tracker. */
+    onrollinit: () => void;
     onupdate: (c: Combatant) => void;
     onremove: (id: string) => void;
+    /** Whose turn it is in the initiative order. */
+    current?: boolean;
+    initiative?: number;
   }
-  let { combatant: c, monster: m, onroll, onrollhp, onupdate, onremove }: Props = $props();
+  let { combatant: c, monster: m, onroll, onrollhp, onrollinit, onupdate, onremove, current = false, initiative }: Props = $props();
 
   let amountText = $state("");
   const SECTIONS: ActionSection[] = ["action", "bonus", "reaction", "legendary", "trait"];
@@ -50,7 +55,8 @@
   }
 </script>
 
-<article class="combatant" class:down>
+<article class="combatant" class:down class:current id="combatant-{c.id}" aria-current={current ? "true" : undefined}>
+  {#if current}<p class="turn-banner">▶ Ist dran</p>{/if}
   <header class="combatant-head">
     <div>
       <h3>{c.label}</h3>
@@ -72,8 +78,8 @@
   </div>
 
   <div class="quick-rolls">
-    <button type="button" onclick={() => roll(monsterCheckRoll(m, label("Initiative"), "dex"))}
-      >Initiative <b>{formatModifier(monsterMod(m, "dex"))}</b></button
+    <button type="button" onclick={onrollinit}
+      >Initiative <b>{formatModifier(monsterMod(m, "dex"))}</b>{#if initiative !== undefined}<small> → {initiative}</small>{/if}</button
     >
     <button type="button" onclick={() => { const r = hitPointsRoll(m); if (r) onrollhp({ ...r, label: label("Trefferpunkte") }); }}
       >TP würfeln <small>({m.hitDice})</small></button
