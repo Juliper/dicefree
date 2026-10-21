@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { roll, type RandomSource } from "./dice";
-import { applyEffects, buildRoll, toggleEffect } from "./effects";
+import { EFFECTS, applyEffects, buildRoll, toggleEffect } from "./effects";
 
 const sequence = (...values: number[]): RandomSource => {
   let i = 0;
@@ -127,5 +127,13 @@ describe("buildRoll + roll", () => {
     const r = roll(buildRoll({ kind: "free", dice: [{ die: 20, count: 1 }], modifier: 0 }, { poisoned: 1 }, "advantage"), sequence(0, 9));
     expect(r.mode).toBe("advantage");
     expect(r.notes).toBeUndefined();
+  });
+});
+
+describe("effect catalog", () => {
+  it("gives every effect a tone", () => {
+    for (const e of EFFECTS) expect(["positive", "negative"]).toContain(e.tone);
+    expect(EFFECTS.find((e) => e.id === "bless")?.tone).toBe("positive");
+    expect(EFFECTS.find((e) => e.id === "poisoned")?.tone).toBe("negative");
   });
 });

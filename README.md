@@ -10,7 +10,7 @@ Rules: **D&D 2024 / SRD 5.2** (CC-BY-4.0).
 - Mixed dice pool plus a modifier (e.g. `1d20 + 1d4 + 5`)
 - Roll types in the dice tab: Free, Attack, Damage (critical hit: all damage dice rolled twice); ability checks and saving throws run through the character sheet
 - Advantage/Disadvantage: two d20s, the higher or lower counts; several sources don't stack, Advantage + Disadvantage cancel out
-- Tap-to-toggle active effects that are applied to attack rolls, ability checks and saving throws automatically – with their source in the result:
+- Active effects shown as one compact line (green = helps, red = hurts); tap it to open a sheet with all effects and their rules. They are applied to attack rolls, ability checks and saving throws automatically – with their source in the result:
   Bless, Bane (−1d4), Guidance, Poisoned, Frightened, Blinded, Prone, Restrained, Grappled, Invisible,
   Paralyzed/Stunned/Unconscious (Strength/Dexterity saves fail), Exhaustion (−2 per level), Helped (used up),
   Half Cover / Three-Quarters Cover

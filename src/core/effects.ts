@@ -37,11 +37,14 @@ export interface Impact {
 }
 
 export type EffectGroup = "spell" | "condition" | "situation";
+/** Whether an effect helps or hurts the one it is on (used for colouring). */
+export type EffectTone = "positive" | "negative";
 
 export interface EffectDef {
   id: string;
   name: string;
   group: EffectGroup;
+  tone: EffectTone;
   /** Short rules summary shown in the UI. */
   summary: string;
   /** Stacking levels (Exhaustion 1–5); omitted means on/off. */
@@ -61,6 +64,7 @@ export const EFFECTS: EffectDef[] = [
     id: "bless",
     name: "Bless",
     group: "spell",
+    tone: "positive",
     summary: "+1d4 to attack rolls and saving throws",
     concentration: true,
     impact: (c) => (on(["attack", "save"], c) ? { dice: d4(1) } : null),
@@ -69,6 +73,7 @@ export const EFFECTS: EffectDef[] = [
     id: "bane",
     name: "Bane",
     group: "spell",
+    tone: "negative",
     summary: "−1d4 to attack rolls and saving throws",
     impact: (c) => (on(["attack", "save"], c) ? { dice: d4(-1) } : null),
   },
@@ -76,6 +81,7 @@ export const EFFECTS: EffectDef[] = [
     id: "guidance",
     name: "Guidance",
     group: "spell",
+    tone: "positive",
     summary: "+1d4 to ability checks (2024: one chosen skill)",
     concentration: true,
     impact: (c) => (on(["check"], c) ? { dice: d4(1) } : null),
@@ -85,6 +91,7 @@ export const EFFECTS: EffectDef[] = [
     id: "poisoned",
     name: "Poisoned",
     group: "condition",
+    tone: "negative",
     summary: "Disadvantage on attack rolls and ability checks",
     impact: (c) => (on(["attack", "check"], c) ? { disadvantage: true } : null),
   },
@@ -92,6 +99,7 @@ export const EFFECTS: EffectDef[] = [
     id: "frightened",
     name: "Frightened",
     group: "condition",
+    tone: "negative",
     summary: "Disadvantage on attack rolls and ability checks while the source is in sight",
     impact: (c) => (on(["attack", "check"], c) ? { disadvantage: true } : null),
   },
@@ -99,6 +107,7 @@ export const EFFECTS: EffectDef[] = [
     id: "blinded",
     name: "Blinded",
     group: "condition",
+    tone: "negative",
     summary: "Disadvantage on your attack rolls",
     impact: (c) => (on(["attack"], c) ? { disadvantage: true } : null),
   },
@@ -106,6 +115,7 @@ export const EFFECTS: EffectDef[] = [
     id: "prone",
     name: "Prone",
     group: "condition",
+    tone: "negative",
     summary: "Disadvantage on your attack rolls",
     impact: (c) => (on(["attack"], c) ? { disadvantage: true } : null),
   },
@@ -113,6 +123,7 @@ export const EFFECTS: EffectDef[] = [
     id: "restrained",
     name: "Restrained",
     group: "condition",
+    tone: "negative",
     summary: "Disadvantage on attack rolls and Dexterity saving throws",
     impact: (c) =>
       on(["attack"], c) || (c.kind === "save" && c.ability === "dex") ? { disadvantage: true } : null,
@@ -121,6 +132,7 @@ export const EFFECTS: EffectDef[] = [
     id: "grappled",
     name: "Grappled",
     group: "condition",
+    tone: "negative",
     summary: "Disadvantage on attacks against anyone but the grappler",
     impact: (c) => (on(["attack"], c) ? { disadvantage: true } : null),
   },
@@ -128,6 +140,7 @@ export const EFFECTS: EffectDef[] = [
     id: "invisible",
     name: "Invisible",
     group: "condition",
+    tone: "positive",
     summary: "Advantage on your attack rolls",
     impact: (c) => (on(["attack"], c) ? { advantage: true } : null),
   },
@@ -135,6 +148,7 @@ export const EFFECTS: EffectDef[] = [
     id: "paralyzed",
     name: "Paralyzed / Stunned / Unconscious",
     group: "condition",
+    tone: "negative",
     summary: "Automatically fail Strength and Dexterity saving throws",
     impact: (c) => (c.kind === "save" && (c.ability === "str" || c.ability === "dex") ? { autoFail: true } : null),
   },
@@ -142,6 +156,7 @@ export const EFFECTS: EffectDef[] = [
     id: "exhaustion",
     name: "Exhaustion",
     group: "condition",
+    tone: "negative",
     summary: "−2 per level to all D20 Tests (level 6 = death)",
     maxLevel: 5,
     impact: (c, level) => (isD20Test(c.kind) ? { flat: -2 * level } : null),
@@ -151,6 +166,7 @@ export const EFFECTS: EffectDef[] = [
     id: "help",
     name: "Helped",
     group: "situation",
+    tone: "positive",
     summary: "Advantage on the next attack roll or ability check (used up)",
     consumable: true,
     impact: (c) => (on(["attack", "check"], c) ? { advantage: true } : null),
@@ -159,6 +175,7 @@ export const EFFECTS: EffectDef[] = [
     id: "cover-half",
     name: "Half Cover",
     group: "situation",
+    tone: "positive",
     summary: "+2 to Dexterity saving throws",
     impact: (c) => (c.kind === "save" && c.ability === "dex" ? { flat: 2 } : null),
   },
@@ -166,6 +183,7 @@ export const EFFECTS: EffectDef[] = [
     id: "cover-three-quarters",
     name: "Three-Quarters Cover",
     group: "situation",
+    tone: "positive",
     summary: "+5 to Dexterity saving throws",
     impact: (c) => (c.kind === "save" && c.ability === "dex" ? { flat: 5 } : null),
   },

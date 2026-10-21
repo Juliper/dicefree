@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ABILITIES, formatModifier } from "../core/dice";
-  import { ABILITY_LABEL, EFFECTS, effectLabel, toggleEffect, type ActiveEffects } from "../core/effects";
+  import { ABILITY_LABEL, type ActiveEffects } from "../core/effects";
+  import EffectsBar from "./EffectsBar.svelte";
   import {
     SECTION_LABEL,
     crLabel,
@@ -42,7 +43,6 @@
 
   let amountText = $state("");
   const SECTIONS: ActionSection[] = ["action", "bonus", "reaction", "legendary", "trait"];
-  const active = $derived(EFFECTS.filter((e) => c.effects[e.id]));
   const down = $derived(c.hp <= 0);
   const label = (what: string) => `${c.label}: ${what}`;
   const roll = (r: MonsterRoll | null) => r && onroll(r, c.effects);
@@ -86,9 +86,13 @@
     >
   </div>
 
-  {#if active.length}
-    <p class="combatant-effects">{active.map((e) => effectLabel(e, c.effects[e.id])).join(" · ")}</p>
-  {/if}
+  <EffectsBar
+    title="Conditions"
+    sheetTitle="{c.label}: Conditions"
+    effects={c.effects}
+    onchange={(effects) => onupdate({ ...c, effects })}
+    hint="Conditions on {c.label} apply to its own attack rolls, ability checks and saving throws."
+  />
 
   {#each SECTIONS as sec (sec)}
     {@const list = m.actions.filter((a) => a.section === sec)}
@@ -195,21 +199,4 @@
     </dl>
   </details>
 
-  <details class="combatant-more">
-    <summary>Conditions & effects{active.length ? ` (${active.length})` : ""}</summary>
-    <div class="effect-chips">
-      {#each EFFECTS as e (e.id)}
-        {@const level = c.effects[e.id] ?? 0}
-        <button
-          type="button"
-          class="effect-chip"
-          class:on={level > 0}
-          aria-pressed={level > 0}
-          title={e.summary}
-          onclick={() => onupdate({ ...c, effects: toggleEffect(c.effects, e.id) })}
-          >{level ? effectLabel(e, level) : e.name}</button
-        >
-      {/each}
-    </div>
-  </details>
 </article>

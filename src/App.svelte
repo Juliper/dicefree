@@ -15,7 +15,8 @@
     type RollRequest,
     type RollResult,
   } from "./core/dice";
-  import { EFFECTS, applyEffects, buildRoll, effectLabel, toggleEffect, type EffectGroup } from "./core/effects";
+  import { EFFECTS, applyEffects, buildRoll } from "./core/effects";
+  import EffectsBar from "./components/EffectsBar.svelte";
   import {
     LIMITS,
     HISTORY_MAX,
@@ -69,11 +70,6 @@
     { value: "disadvantage", label: "Disadvantage" },
   ];
   const MODE_LABEL = { advantage: "Advantage", disadvantage: "Disadvantage" } as const;
-  const EFFECT_GROUPS: { id: EffectGroup; label: string }[] = [
-    { id: "spell", label: "Spells" },
-    { id: "condition", label: "Conditions" },
-    { id: "situation", label: "Situations" },
-  ];
 
   // The dice tab only offers roll kinds that don't need character data; checks and saves
   // live on the character sheet (saved rolls of those kinds still work).
@@ -503,6 +499,15 @@
     >
   </nav>
 
+  {#if session.view !== "dm" && !(session.view === "character" && editingCharacter)}
+    <EffectsBar
+      effects={session.effects}
+      onchange={(e) => (session.effects = e)}
+      relevant={session.view === "dice" && d20Test ? effectRelevant : undefined}
+      hint="Effects apply to attack rolls, ability checks and saving throws. Tap Exhaustion repeatedly to raise its level."
+    />
+  {/if}
+
   {#if session.view === "character"}
     <section class="character-bar" aria-label="Choose character">
       {#if session.characters.length > 1 && !editingCharacter}
@@ -728,39 +733,6 @@
         {canRoll ? `Roll: ${rollLabel}` : rollLabel}
       </button>
     </div>
-  </section>
-
-  {/if}
-
-  {#if !(session.view === "character" && editingCharacter) && session.view !== "dm"}
-  <section class="effects" aria-label="Active effects">
-    <div class="section-head">
-      <h2>Active Effects</h2>
-      {#if Object.keys(session.effects).length}
-        <button type="button" class="ghost small" onclick={() => (session.effects = {})}>All off</button>
-      {/if}
-    </div>
-    {#each EFFECT_GROUPS as grp (grp.id)}
-      <div class="effect-group">
-        <span class="effect-group-label">{grp.label}</span>
-        <div class="effect-chips">
-          {#each EFFECTS.filter((e) => e.group === grp.id) as e (e.id)}
-            {@const level = session.effects[e.id] ?? 0}
-            <button
-              type="button"
-              class="effect-chip"
-              class:on={level > 0}
-              class:relevant={level > 0 && effectRelevant(e.id)}
-              aria-pressed={level > 0}
-              title={e.summary}
-              onclick={() => (session.effects = toggleEffect(session.effects, e.id))}
-              >{level ? effectLabel(e, level) : e.name}{#if e.maxLevel && level}<small> / {e.maxLevel}</small>{/if}</button
-            >
-          {/each}
-        </div>
-      </div>
-    {/each}
-    <p class="hint">Tap to toggle{#if EFFECTS.some((e) => e.maxLevel)}; Exhaustion goes up one level per tap{/if}. Effects apply to attack rolls, ability checks and saving throws.</p>
   </section>
 
   {/if}
