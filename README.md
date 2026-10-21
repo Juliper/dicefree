@@ -36,7 +36,7 @@ Regelbasis: **D&D 2024 / SRD 5.2** (CC-BY-4.0).
   eintragen, Monster mit einem Tipp würfeln (d20 + GES, Zustände wirken mit) oder von Hand setzen. Automatisch
   sortiert; „Weiter“ zeigt, wer dran ist, zählt Runden und überspringt kampfunfähige Monster. Die aktive Monsterkarte
   wird hervorgehoben.
-- Verlauf der letzten 100 Würfe (nur im Speicher)
+- Verlauf der letzten 100 Würfe (nur im Speicher), einblendbar über das Uhr-Symbol in der Ergebnis-Karte
 - JSON-Import/-Export
 - Fairer Zufall über `crypto.getRandomValues` mit Rejection Sampling
 - Installierbar als PWA (Android & iOS „Zum Home-Bildschirm“), funktioniert offline

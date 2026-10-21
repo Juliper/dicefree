@@ -85,6 +85,7 @@
   let presetDialog: PresetDialog;
   let editingCharacter = $state(false);
   let monsterSearch: MonsterSearch;
+  let historyDialog: HTMLDialogElement;
   let encounterEditor: EncounterEditor;
   const statblock = (index: string) => session.bestiary.find((m) => m.index === index);
   const encounterXp = $derived(session.encounter.reduce((n, c) => n + (statblock(c.index)?.xp ?? 0), 0));
@@ -453,6 +454,17 @@
     class:fumble={nat === "fumble" || current?.autoFail}
     aria-live="polite"
   >
+    <button
+      type="button"
+      class="history-toggle"
+      aria-label="Verlauf anzeigen{session.history.length ? ` (${session.history.length} Würfe)` : ''}"
+      onclick={() => historyDialog.showModal()}
+    >
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 4v4h4" /><path d="M12 7v5l3 2" />
+      </svg>
+      {#if session.history.length}<span class="history-count">{session.history.length}</span>{/if}
+    </button>
     <div class="result-label">
       {#if current}{@render title(current)}{:else}Stell dir einen Wurf zusammen{/if}
     </div>
@@ -789,15 +801,35 @@
 
   {/if}
 
-  <section class="history">
-    <div class="section-head">
-      <h2>Verlauf</h2>
+  <footer class="attribution">
+    Dieses Werk enthält Material aus dem System Reference Document 5.2 („SRD 5.2“) von Wizards of the Coast LLC,
+    verfügbar unter <a href="https://www.dndbeyond.com/srd" target="_blank" rel="noopener">dndbeyond.com/srd</a>.
+    Das SRD 5.2 steht unter der
+    <a href="https://creativecommons.org/licenses/by/4.0/legalcode" target="_blank" rel="noopener">Creative Commons Attribution 4.0</a>.
+    Daten über <a href="https://www.dnd5eapi.co" target="_blank" rel="noopener">dnd5eapi.co</a>. Kein offizielles Produkt von Wizards of the Coast.
+  </footer>
+</main>
+
+<!-- Roll history as a bottom sheet; tapping the backdrop closes it. -->
+<dialog
+  bind:this={historyDialog}
+  class="sheet"
+  aria-labelledby="history-title"
+  onclick={(e) => {
+    if (e.target === historyDialog) historyDialog.close();
+  }}
+>
+  <div class="sheet-body">
+    <div class="sheet-head">
+      <h2 id="history-title">Verlauf</h2>
+      <span class="spacer"></span>
       {#if session.history.length}
         <button type="button" class="ghost small" onclick={() => (session.history = [])}>Leeren</button>
       {/if}
+      <button type="button" class="ghost small" aria-label="Verlauf schließen" onclick={() => historyDialog.close()}>✕</button>
     </div>
     {#if session.history.length}
-      <ol>
+      <ol class="history-list">
         {#each session.history as e}
           <li>
             <div class="h-main">
@@ -810,17 +842,10 @@
         {/each}
       </ol>
     {:else}
-      <p class="hint">Noch keine Würfe. Gespeicherte Würfe, Effekte und Einstellungen bleiben auf diesem Gerät; der Verlauf nicht. Mit Export nimmst du alles auf ein anderes Gerät mit.</p>
+      <p class="hint">Noch keine Würfe. Der Verlauf bleibt nur bis zum Neuladen; gespeicherte Würfe, Charaktere und Kämpfe bleiben auf diesem Gerät.</p>
     {/if}
-  </section>
-  <footer class="attribution">
-    Dieses Werk enthält Material aus dem System Reference Document 5.2 („SRD 5.2“) von Wizards of the Coast LLC,
-    verfügbar unter <a href="https://www.dndbeyond.com/srd" target="_blank" rel="noopener">dndbeyond.com/srd</a>.
-    Das SRD 5.2 steht unter der
-    <a href="https://creativecommons.org/licenses/by/4.0/legalcode" target="_blank" rel="noopener">Creative Commons Attribution 4.0</a>.
-    Daten über <a href="https://www.dnd5eapi.co" target="_blank" rel="noopener">dnd5eapi.co</a>. Kein offizielles Produkt von Wizards of the Coast.
-  </footer>
-</main>
+  </div>
+</dialog>
 
 <ConfirmHost />
 <MonsterSearch bind:this={monsterSearch} bestiary={session.bestiary} onadd={addMonster} />
