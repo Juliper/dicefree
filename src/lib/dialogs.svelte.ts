@@ -26,7 +26,7 @@ export function ask(message: string, opts: AskOptions = {}): Promise<boolean> {
     dialogs.current = {
       message,
       confirmLabel: opts.confirmLabel ?? "OK",
-      cancelLabel: opts.cancelLabel ?? "Abbrechen",
+      cancelLabel: opts.cancelLabel ?? "Cancel",
       danger: opts.danger ?? false,
       resolve,
     };

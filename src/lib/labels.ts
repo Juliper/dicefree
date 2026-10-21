@@ -2,27 +2,30 @@ import { expression, formatModifier, type Ability, type DiceGroup, type RollKind
 import { ABILITY_LABEL } from "../core/effects";
 
 export const KIND_TAB: Record<RollKind, string> = {
-  free: "Frei",
-  attack: "Angriff",
-  check: "Attribut",
-  save: "Rettung",
-  damage: "Schaden",
+  free: "Free",
+  attack: "Attack",
+  check: "Check",
+  save: "Save",
+  damage: "Damage",
 };
 
 export const KIND_LABEL: Record<RollKind, string> = {
-  free: "Wurf",
-  attack: "Angriff",
-  check: "Attributswurf",
-  save: "Rettungswurf",
-  damage: "Schaden",
+  free: "Roll",
+  attack: "Attack",
+  check: "Ability Check",
+  save: "Saving Throw",
+  damage: "Damage",
 };
 
-/** "Angriff +5", "GES-Rettungswurf +3", "1d8 + 3" – how a roll is named in tiles and buttons. */
+/** "DEX Save", "STR Check", "Saving Throw" – the name of a D20 Test. */
+export function testName(kind: RollKind, ability: Ability | undefined): string {
+  if (ability && kind === "save") return `${ABILITY_LABEL[ability]} Save`;
+  if (ability && kind === "check") return `${ABILITY_LABEL[ability]} Check`;
+  return KIND_LABEL[kind];
+}
+
+/** "Attack +5", "DEX Save +3", "1d8 + 3" – how a roll is named in tiles and buttons. */
 export function describeRoll(kind: RollKind, ability: Ability | undefined, dice: DiceGroup[], modifier: number): string {
-  if (kind === "attack") return `Angriff ${formatModifier(modifier)}`;
-  if (kind === "check" || kind === "save") {
-    const prefix = ability ? `${ABILITY_LABEL[ability]}-` : "";
-    return `${prefix}${KIND_LABEL[kind]} ${formatModifier(modifier)}`;
-  }
+  if (kind === "attack" || kind === "check" || kind === "save") return `${testName(kind, ability)} ${formatModifier(modifier)}`;
   return expression({ dice, modifier });
 }

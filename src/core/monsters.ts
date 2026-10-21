@@ -2,6 +2,7 @@
 
 import { ABILITIES, isDie, normalizePool, type Ability, type BonusDice, type DiceGroup, type Flat } from "./dice";
 import { abilityMod, type SheetRoll } from "./character";
+import { ABILITY_LABEL } from "./effects";
 import { damageTypeLabel } from "./spells";
 
 export interface MonsterDamage {
@@ -70,42 +71,16 @@ const SECTION_FIELDS: [string, ActionSection][] = [
 ];
 
 export const SECTION_LABEL: Record<ActionSection, string> = {
-  trait: "Merkmale",
-  action: "Aktionen",
-  bonus: "Bonusaktionen",
-  reaction: "Reaktionen",
-  legendary: "Legendäre Aktionen",
+  trait: "Traits",
+  action: "Actions",
+  bonus: "Bonus Actions",
+  reaction: "Reactions",
+  legendary: "Legendary Actions",
 };
 
-const SIZE_DE: Record<string, string> = {
-  Tiny: "Winzig",
-  Small: "Klein",
-  Medium: "Mittelgroß",
-  Large: "Groß",
-  Huge: "Riesig",
-  Gargantuan: "Gigantisch",
-};
-
-const TYPE_DE: Record<string, string> = {
-  aberration: "Aberration",
-  beast: "Tier",
-  celestial: "Himmlisches Wesen",
-  construct: "Konstrukt",
-  dragon: "Drache",
-  elemental: "Elementar",
-  fey: "Feenwesen",
-  fiend: "Unhold",
-  giant: "Riese",
-  humanoid: "Humanoider",
-  monstrosity: "Monstrosität",
-  ooze: "Schlick",
-  plant: "Pflanze",
-  undead: "Untoter",
-  swarm: "Schwarm",
-};
-
-export const sizeLabel = (s: string) => SIZE_DE[s] ?? s;
-export const typeLabel = (t: string) => TYPE_DE[t.toLowerCase()] ?? t;
+export const sizeLabel = (s: string) => s;
+/** "dragon" → "Dragon" (the API gives lower-case types). */
+export const typeLabel = (t: string) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : t);
 
 /** 0.125 → "1/8", 0.25 → "1/4", 0.5 → "1/2". */
 export function crLabel(cr: number): string {
@@ -267,7 +242,7 @@ export function damageText(dmg: MonsterDamage[]): string {
 /** Monster rolls may carry extra damage types as sourced dice/flats, or a recharge threshold to evaluate. */
 export type MonsterRoll = SheetRoll & { bonusDice?: BonusDice[]; flats?: Flat[]; rechargeAt?: number };
 
-export const rechargeOutcome = (total: number, at: number) => (total >= at ? "Aufgeladen!" : "Nicht aufgeladen");
+export const rechargeOutcome = (total: number, at: number) => (total >= at ? "Recharged!" : "Not recharged");
 
 const d20: DiceGroup[] = [{ die: 20, count: 1 }];
 
@@ -311,8 +286,8 @@ export function monsterDamageRoll(label: string, action: MonsterAction): Monster
   const notes: string[] = [];
   if (action.dc) {
     notes.push(
-      `${ABILITY_SHORT[action.dc.ability]}-Rettungswurf SG ${action.dc.value}` +
-        (action.dc.success === "half" ? " – bei Erfolg halber Schaden" : ""),
+      `${ABILITY_LABEL[action.dc.ability]} saving throw DC ${action.dc.value}` +
+        (action.dc.success === "half" ? " – half damage on a success" : ""),
     );
   }
   return {
@@ -321,9 +296,9 @@ export function monsterDamageRoll(label: string, action: MonsterAction): Monster
     modifier: first.bonus,
     label: first.type ? `${label} (${damageTypeLabel(first.type)})` : label,
     bonusDice: rest.flatMap((d) =>
-      d.dice.map((g) => ({ source: damageTypeLabel(d.type) || "Schaden", die: g.die, count: g.count, sign: 1 as const })),
+      d.dice.map((g) => ({ source: damageTypeLabel(d.type) || "Damage", die: g.die, count: g.count, sign: 1 as const })),
     ),
-    flats: rest.filter((d) => d.bonus).map((d) => ({ source: damageTypeLabel(d.type) || "Schaden", value: d.bonus })),
+    flats: rest.filter((d) => d.bonus).map((d) => ({ source: damageTypeLabel(d.type) || "Damage", value: d.bonus })),
     notes,
   };
 }
@@ -332,7 +307,7 @@ export const rechargeRoll = (label: string, action: MonsterAction): MonsterRoll 
   kind: "free",
   dice: [{ die: 6, count: 1 }],
   modifier: 0,
-  label: `${label}: Aufladung ${action.recharge}${action.recharge === 6 ? "" : "–6"}`,
+  label: `${label}: Recharge ${action.recharge}${action.recharge === 6 ? "" : "–6"}`,
   rechargeAt: action.recharge,
 });
 
@@ -340,10 +315,9 @@ export const rechargeRoll = (label: string, action: MonsterAction): MonsterRoll 
 export function hitPointsRoll(m: Monster): MonsterRoll | null {
   const parsed = parseDamageDice(m.hitDice);
   if (!parsed?.dice.length) return null;
-  return { kind: "free", dice: parsed.dice, modifier: parsed.bonus, label: `${m.name}: Trefferpunkte` };
+  return { kind: "free", dice: parsed.dice, modifier: parsed.bonus, label: `${m.name}: Hit Points` };
 }
 
-const ABILITY_SHORT: Record<Ability, string> = { str: "STÄ", dex: "GES", con: "KON", int: "INT", wis: "WEI", cha: "CHA" };
 
 // --- Tolerant parsing for monsters stored on the device ---
 

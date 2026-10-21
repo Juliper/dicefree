@@ -43,10 +43,10 @@ describe("session import/export", () => {
       pool,
       modifier: -1,
       mode: "advantage",
-      presets: [makePreset({ name: "Langschwert", dice: [{ die: 8, count: 1 }], modifier: 3 })!],
+      presets: [makePreset({ name: "Longsword", dice: [{ die: 8, count: 1 }], modifier: 3 })!],
       history: [
         roll({ dice: pool, modifier: -1 }),
-        roll({ dice: [{ die: 20, count: 1 }], modifier: 5, mode: "advantage", label: "Angriff" }),
+        roll({ dice: [{ die: 20, count: 1 }], modifier: 5, mode: "advantage", label: "Attack" }),
       ],
     };
     expect(fromFile(JSON.parse(JSON.stringify(toFile(s))))).toEqual(s);
@@ -93,15 +93,15 @@ describe("session import/export", () => {
 
 describe("presets", () => {
   it("normalizes dice, trims the name and clamps the bonus", () => {
-    const p = makePreset({ name: "  Feuerball  ", dice: [{ die: 6, count: 4 }, { die: 6, count: 4 }], modifier: 500 })!;
-    expect(p.name).toBe("Feuerball");
+    const p = makePreset({ name: "  Fireball  ", dice: [{ die: 6, count: 4 }, { die: 6, count: 4 }], modifier: 500 })!;
+    expect(p.name).toBe("Fireball");
     expect(p.dice).toEqual([{ die: 6, count: 8 }]);
     expect(p.modifier).toBe(99);
     expect(p.id).toBeTruthy();
   });
 
   it("refuses empty pools and names", () => {
-    expect(makePreset({ name: "Nichts", dice: [], modifier: 0 })).toBeNull();
+    expect(makePreset({ name: "Nothing", dice: [], modifier: 0 })).toBeNull();
     expect(makePreset({ name: "   ", dice: [{ die: 4, count: 1 }], modifier: 0 })).toBeNull();
   });
 
@@ -110,12 +110,12 @@ describe("presets", () => {
       format: "dicefree",
       version: 3,
       presets: [
-        { id: "a", name: "Dolch", dice: [{ die: 4, count: 1 }], modifier: 2 },
-        { id: "b", name: "Kaputt", dice: [{ die: 7, count: 1 }] },
+        { id: "a", name: "Dagger", dice: [{ die: 4, count: 1 }], modifier: 2 },
+        { id: "b", name: "Broken", dice: [{ die: 7, count: 1 }] },
         { name: 42, dice: [{ die: 4, count: 1 }] },
       ],
     });
-    expect(s.presets).toEqual([{ id: "a", name: "Dolch", kind: "free", dice: [{ die: 4, count: 1 }], modifier: 2 }]);
+    expect(s.presets).toEqual([{ id: "a", name: "Dagger", kind: "free", dice: [{ die: 4, count: 1 }], modifier: 2 }]);
   });
 });
 
@@ -129,7 +129,7 @@ describe("device storage", () => {
       pool: [{ die: 20, count: 1 }],
       modifier: 2,
       mode: "disadvantage",
-      presets: [makePreset({ name: "Dolch", dice: [{ die: 4, count: 1 }], modifier: 2 })!],
+      presets: [makePreset({ name: "Dagger", dice: [{ die: 4, count: 1 }], modifier: 2 })!],
       history: [roll({ dice: [{ die: 6, count: 1 }], modifier: 0 })],
     };
     expect(fromStored(JSON.parse(JSON.stringify(toStored(s))))).toEqual({ ...s, history: [] });
@@ -143,10 +143,10 @@ describe("device storage", () => {
 
 describe("presets with roll kinds", () => {
   it("forces 1d20 for D20 Tests and keeps the ability for checks/saves", () => {
-    const p = makePreset({ name: "GES-Rettung", kind: "save", ability: "dex", dice: [{ die: 6, count: 3 }], modifier: 4 })!;
+    const p = makePreset({ name: "DEX Save", kind: "save", ability: "dex", dice: [{ die: 6, count: 3 }], modifier: 4 })!;
     expect(p.dice).toEqual([{ die: 20, count: 1 }]);
     expect(p.ability).toBe("dex");
-    const a = makePreset({ name: "Angriff", kind: "attack", ability: "str", dice: [], modifier: 5 })!;
+    const a = makePreset({ name: "Attack", kind: "attack", ability: "str", dice: [], modifier: 5 })!;
     expect(a.dice).toEqual([{ die: 20, count: 1 }]);
     expect(a.ability).toBeUndefined();
   });
@@ -239,14 +239,14 @@ describe("saved encounters", () => {
   const empty = none();
 
   it("builds from counts, merging duplicates and ignoring zero", () => {
-    const e = makeSavedEncounter("  Hinterhalt ", [
+    const e = makeSavedEncounter("  Ambush ", [
       { index: "goblin-warrior", count: 2 },
       { index: "goblin-boss", count: 0 },
       { index: "goblin-warrior", count: 2 },
     ])!;
-    expect(e).toMatchObject({ name: "Hinterhalt", monsters: [{ index: "goblin-warrior", count: 4 }] });
+    expect(e).toMatchObject({ name: "Ambush", monsters: [{ index: "goblin-warrior", count: 4 }] });
     expect(makeSavedEncounter("", [{ index: "x", count: 1 }])).toBeNull();
-    expect(makeSavedEncounter("Leer", [])).toBeNull();
+    expect(makeSavedEncounter("Empty", [])).toBeNull();
   });
 
   it("captures the current encounter as counts", () => {
@@ -260,7 +260,7 @@ describe("saved encounters", () => {
   });
 
   it("keeps statblocks of saved fights when the encounter is cleared", () => {
-    const saved = makeSavedEncounter("Hinterhalt", [{ index: "goblin-warrior", count: 3 }])!;
+    const saved = makeSavedEncounter("Ambush", [{ index: "goblin-warrior", count: 3 }])!;
     let s = storeSavedEncounter(empty, saved, [goblin]);
     s = addCombatant(s, boss);
     s = clearEncounter(s);
@@ -270,7 +270,7 @@ describe("saved encounters", () => {
   });
 
   it("loads by replacing or appending, numbering duplicates", () => {
-    const saved = makeSavedEncounter("Hinterhalt", [
+    const saved = makeSavedEncounter("Ambush", [
       { index: "goblin-warrior", count: 2 },
       { index: "goblin-boss", count: 1 },
     ])!;
@@ -297,7 +297,7 @@ describe("saved encounters", () => {
   });
 
   it("round-trips through storage and drops monsters without statblock", () => {
-    const saved = makeSavedEncounter("Hinterhalt", [{ index: "goblin-warrior", count: 2 }])!;
+    const saved = makeSavedEncounter("Ambush", [{ index: "goblin-warrior", count: 2 }])!;
     const s: Session = { ...emptySession(), ...storeSavedEncounter(empty, saved, [goblin]) };
     const back = fromStored(JSON.parse(JSON.stringify(toStored(s))));
     expect(back.savedEncounters).toEqual([saved]);

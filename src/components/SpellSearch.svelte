@@ -32,7 +32,7 @@
     try {
       index = await loadSpellIndex();
     } catch (err) {
-      error = `Zauberliste konnte nicht geladen werden (${(err as Error).message}). Bist du online?`;
+      error = `Could not load the spell list (${(err as Error).message}). Are you online?`;
     }
   }
 
@@ -42,7 +42,7 @@
     try {
       onadd(await loadSpell(entry.index));
     } catch (err) {
-      error = `„${entry.name}“ konnte nicht geladen werden (${(err as Error).message}).`;
+      error = `Could not load “${entry.name}” (${(err as Error).message}).`;
     } finally {
       adding = null;
     }
@@ -52,28 +52,28 @@
 <dialog bind:this={dialog} class="preset-dialog spell-search" aria-labelledby="spell-search-title">
   <div class="spell-search-body">
     <div class="section-head">
-      <h2 id="spell-search-title">Zauber hinzufügen</h2>
-      <button type="button" class="ghost small" onclick={() => dialog.close()}>Fertig</button>
+      <h2 id="spell-search-title">Add spells</h2>
+      <button type="button" class="ghost small" onclick={() => dialog.close()}>Done</button>
     </div>
     <input
       class="search-input"
       type="search"
-      placeholder="Suchen, z. B. Fireball"
+      placeholder="Search, e.g. Fireball"
       bind:value={query}
       autocomplete="off"
       enterkeyhint="search"
     />
-    <div class="level-filter" role="radiogroup" aria-label="Grad">
-      <button type="button" role="radio" aria-checked={level === null} class:selected={level === null} onclick={() => (level = null)}>Alle</button>
+    <div class="level-filter" role="radiogroup" aria-label="Spell level">
+      <button type="button" role="radio" aria-checked={level === null} class:selected={level === null} onclick={() => (level = null)}>All</button>
       {#each [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] as l (l)}
         <button type="button" role="radio" aria-checked={level === l} class:selected={level === l} onclick={() => (level = l)}
-          >{l === 0 ? "ZT" : l}</button
+          >{l === 0 ? "C" : l}</button
         >
       {/each}
     </div>
 
     {#if error}<p class="error">{error}</p>{/if}
-    {#if !index && !error}<p class="hint">Lade Zauberliste …</p>{/if}
+    {#if !index && !error}<p class="hint">Loading spells …</p>{/if}
 
     <ul class="spell-results">
       {#each results as s (s.index)}
@@ -81,12 +81,12 @@
         <li>
           <button type="button" disabled={has || adding !== null} onclick={() => add(s)}>
             <span>{s.name}</span>
-            <small>{adding === s.index ? "lädt …" : has ? "✓ hinzugefügt" : levelLabel(s.level)}</small>
+            <small>{adding === s.index ? "loading …" : has ? "✓ added" : levelLabel(s.level)}</small>
           </button>
         </li>
       {/each}
     </ul>
-    {#if index && !results.length}<p class="hint">Nichts gefunden.</p>{/if}
-    <p class="hint attribution">Zauber aus dem SRD 5.2 (englisch), CC-BY-4.0.</p>
+    {#if index && !results.length}<p class="hint">Nothing found.</p>{/if}
+    <p class="hint attribution">Spells from the SRD 5.2, CC-BY-4.0.</p>
   </div>
 </dialog>

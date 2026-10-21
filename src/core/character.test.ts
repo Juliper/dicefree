@@ -84,11 +84,11 @@ describe("rules helpers", () => {
   });
 
   it("evaluates death saves", () => {
-    expect(deathSaveOutcome(20, 20)).toContain("1 TP");
-    expect(deathSaveOutcome(1, 1)).toContain("zwei Fehlschläge");
-    expect(deathSaveOutcome(12, 12)).toBe("Erfolg");
-    expect(deathSaveOutcome(9, 9)).toBe("Fehlschlag");
-    expect(deathSaveOutcome(9, 11)).toBe("Erfolg"); // e.g. with Bless
+    expect(deathSaveOutcome(20, 20)).toContain("1 HP");
+    expect(deathSaveOutcome(1, 1)).toContain("two failures");
+    expect(deathSaveOutcome(12, 12)).toBe("Success");
+    expect(deathSaveOutcome(9, 9)).toBe("Failure");
+    expect(deathSaveOutcome(9, 11)).toBe("Success"); // e.g. with Bless
   });
 });
 
@@ -111,9 +111,9 @@ describe("parseDice", () => {
 describe("sheet rolls", () => {
   it("builds attack and damage rolls", () => {
     const c = wizard();
-    const dagger = { ...newAttack(), name: "Dolch", ability: "dex" as const, damage: [{ die: 4 as const, count: 1 }], damageType: "Stich" };
-    expect(attackRoll(c, dagger)).toMatchObject({ kind: "attack", modifier: 5, label: "Dolch" });
-    expect(damageRoll(c, dagger)).toMatchObject({ kind: "damage", modifier: 2, label: "Dolch (Stich)", dice: [{ die: 4, count: 1 }] });
+    const dagger = { ...newAttack(), name: "Dagger", ability: "dex" as const, damage: [{ die: 4 as const, count: 1 }], damageType: "Piercing" };
+    expect(attackRoll(c, dagger)).toMatchObject({ kind: "attack", modifier: 5, label: "Dagger" });
+    expect(damageRoll(c, dagger)).toMatchObject({ kind: "damage", modifier: 2, label: "Dagger (Piercing)", dice: [{ die: 4, count: 1 }] });
   });
 });
 

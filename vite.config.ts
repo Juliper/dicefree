@@ -13,8 +13,8 @@ export default defineConfig({
       manifest: {
         name: "Dicefree",
         short_name: "Dicefree",
-        description: "Simpler Würfel-Roller ohne Account. Daten bleiben bei dir.",
-        lang: "de",
+        description: "A simple D&D dice roller without an account. Your data stays with you.",
+        lang: "en",
         display: "standalone",
         start_url: ".",
         scope: ".",

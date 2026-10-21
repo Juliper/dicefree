@@ -40,9 +40,9 @@
 
 <section class="initiative card" aria-label="Initiative">
   <div class="section-head">
-    <h2>Initiative{#if started}<span class="round">{" · "}Runde {tracker.round}</span>{/if}</h2>
+    <h2>Initiative{#if started}<span class="round">{" · "}Round {tracker.round}</span>{/if}</h2>
     {#if started}
-      <button type="button" class="ghost small" onclick={onend}>Beenden</button>
+      <button type="button" class="ghost small" onclick={onend}>End</button>
     {/if}
   </div>
 
@@ -53,21 +53,21 @@
         <li class="init-row" class:current class:down={e.down} class:player={e.kind === "player"}>
           <span class="init-marker" aria-hidden="true">{current ? "▶" : ""}</span>
           <button type="button" class="init-name" onclick={() => onselect(e.id)} aria-current={current ? "true" : undefined}>
-            {e.name}
-            <small>{e.kind === "player" ? "Spieler" : e.down ? "kampfunfähig" : "Monster"}</small>
+            <span class="init-name-text">{e.name}</span>
+            <small>{e.kind === "player" ? "Player" : e.down ? "down" : "Monster"}</small>
           </button>
           <input
             type="text"
             inputmode="numeric"
             class="init-value"
-            aria-label="Initiative von {e.name}"
+            aria-label="Initiative of {e.name}"
             placeholder="–"
             value={e.init ?? ""}
             onchange={(ev) => setValue(e.id, ev.currentTarget.value)}
             onfocus={(ev) => ev.currentTarget.select()}
           />
           {#if e.kind === "player"}
-            <button type="button" class="init-remove" aria-label="{e.name} entfernen" onclick={() => onremoveplayer(e.id)}>✕</button>
+            <button type="button" class="init-remove" aria-label="Remove {e.name}" onclick={() => onremoveplayer(e.id)}>✕</button>
           {:else}
             <span class="init-remove" aria-hidden="true"></span>
           {/if}
@@ -75,26 +75,26 @@
       {/each}
     </ol>
   {:else}
-    <p class="hint">Füge Spieler und Monster hinzu, dann trag die Initiative ein.</p>
+    <p class="hint">Add players and monsters, then enter initiative.</p>
   {/if}
 
   <form class="add-player" onsubmit={addPlayer}>
-    <input type="text" bind:value={playerName} placeholder="Spieler hinzufügen, z. B. Aria" maxlength="40" autocomplete="off" enterkeyhint="done" />
-    <button type="submit" class="ghost" disabled={!playerName.trim()}>+ Spieler</button>
+    <input type="text" bind:value={playerName} placeholder="Add a player, e.g. Aria" maxlength="40" autocomplete="off" enterkeyhint="done" />
+    <button type="submit" class="ghost" disabled={!playerName.trim()}>+ Player</button>
   </form>
 
   <div class="init-actions">
     {#if monstersMissing}
-      <button type="button" class="ghost" onclick={onrollmonsters}>Monster würfeln</button>
+      <button type="button" class="ghost" onclick={onrollmonsters}>Roll monsters</button>
     {/if}
     {#if started}
-      <button type="button" class="ghost" onclick={() => onchange(previousTurn(tracker, ordered))} aria-label="Vorheriger Zug">◀</button>
+      <button type="button" class="ghost" onclick={() => onchange(previousTurn(tracker, ordered))} aria-label="Previous turn">◀</button>
     {/if}
     <button type="button" class="primary next" disabled={!canStart} onclick={() => onchange(nextTurn(tracker, ordered))}>
-      {started ? "Weiter ▶" : "Kampf starten"}
+      {started ? "Next ▶" : "Start combat"}
     </button>
   </div>
   {#if missing.length && started}
-    <p class="hint">Ohne Wert (noch nicht in der Reihenfolge): {missing.map((e) => e.name).join(", ")}</p>
+    <p class="hint">No value yet (not in the order): {missing.map((e) => e.name).join(", ")}</p>
   {/if}
 </section>

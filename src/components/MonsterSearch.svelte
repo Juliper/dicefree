@@ -33,7 +33,7 @@
     try {
       index = await loadMonsterIndex();
     } catch (err) {
-      error = `Monsterliste konnte nicht geladen werden (${(err as Error).message}). Bist du online?`;
+      error = `Could not load the monster list (${(err as Error).message}). Are you online?`;
     }
   }
 
@@ -44,7 +44,7 @@
       onadd(bestiary.find((m) => m.index === entry.index) ?? (await loadMonster(entry.index)));
       added[entry.index] = (added[entry.index] ?? 0) + 1;
     } catch (err) {
-      error = `„${entry.name}“ konnte nicht geladen werden (${(err as Error).message}).`;
+      error = `Could not load “${entry.name}” (${(err as Error).message}).`;
     } finally {
       adding = null;
     }
@@ -54,30 +54,30 @@
 <dialog bind:this={dialog} class="preset-dialog spell-search" aria-labelledby="monster-search-title">
   <div class="spell-search-body">
     <div class="section-head">
-      <h2 id="monster-search-title">Monster hinzufügen</h2>
-      <button type="button" class="ghost small" onclick={() => dialog.close()}>Fertig</button>
+      <h2 id="monster-search-title">Add monsters</h2>
+      <button type="button" class="ghost small" onclick={() => dialog.close()}>Done</button>
     </div>
     <input
       class="search-input"
       type="search"
-      placeholder="Suchen, z. B. Goblin"
+      placeholder="Search, e.g. Goblin"
       bind:value={query}
       autocomplete="off"
       enterkeyhint="search"
     />
     {#if error}<p class="error">{error}</p>{/if}
-    {#if !index && !error}<p class="hint">Lade Monsterliste …</p>{/if}
+    {#if !index && !error}<p class="hint">Loading monsters …</p>{/if}
     <ul class="spell-results">
       {#each results as m (m.index)}
         <li>
           <button type="button" disabled={adding !== null} onclick={() => add(m)}>
             <span>{m.name}</span>
-            <small>{adding === m.index ? "lädt …" : added[m.index] ? `+${added[m.index]} im Kampf` : "hinzufügen"}</small>
+            <small>{adding === m.index ? "loading …" : added[m.index] ? `+${added[m.index]} added` : "add"}</small>
           </button>
         </li>
       {/each}
     </ul>
-    {#if index && !results.length}<p class="hint">Nichts gefunden.</p>{/if}
-    <p class="hint attribution">Monster aus dem SRD 5.2 (englisch), CC-BY-4.0. Mehrfach tippen fügt mehrere hinzu.</p>
+    {#if index && !results.length}<p class="hint">Nothing found.</p>{/if}
+    <p class="hint attribution">Monsters from the SRD 5.2, CC-BY-4.0. Tap several times to add several.</p>
   </div>
 </dialog>

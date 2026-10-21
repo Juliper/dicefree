@@ -4,7 +4,7 @@
   import { KIND_LABEL, describeRoll } from "../lib/labels";
 
   interface Props {
-    /** The roll currently set up in the main view (used for new presets / "übernehmen"). */
+    /** The roll currently set up in the main view (used for new presets / "use current"). */
     pool: DiceGroup[];
     kind: RollKind;
     ability?: Ability;
@@ -62,7 +62,7 @@
 
 <dialog bind:this={dialog} class="preset-dialog" aria-labelledby="preset-title">
   <form onsubmit={save}>
-    <h2 id="preset-title">{editing ? "Wurf bearbeiten" : "Wurf speichern"}</h2>
+    <h2 id="preset-title">{editing ? "Edit roll" : "Save roll"}</h2>
 
     <label class="field">
       <span>Name</span>
@@ -70,43 +70,43 @@
         type="text"
         bind:value={name}
         maxlength={PRESET_NAME_MAX}
-        placeholder="z. B. Langschwert"
+        placeholder="e.g. Longsword"
         autocomplete="off"
         enterkeyhint="done"
       />
     </label>
 
     <div class="field">
-      <span>Wurf</span>
+      <span>Roll</span>
       {#if candidate}
         <div class="preset-dice">
           {describe(draft)}{#if draft.kind !== "free" && draft.kind !== "attack"}{" "}<small>({KIND_LABEL[draft.kind]})</small>{/if}
         </div>
       {:else}
-        <p class="hint">Wähle zuerst oben die Würfel aus, dann tippe auf +.</p>
+        <p class="hint">Pick the dice above first, then tap +.</p>
       {/if}
       {#if editing && differs && makePreset({ name: "x", ...currentDraft, modifier: 0 })}
         <button type="button" class="ghost small" onclick={() => (draft = { ...currentDraft })}>
-          Aktuellen Wurf übernehmen ({describe(currentDraft)})
+          Use current roll ({describe(currentDraft)})
         </button>
       {/if}
     </div>
 
     <label class="field">
-      <span>Fester Bonus <small>(Bonus/Malus aus dem Feld wird beim Würfeln zusätzlich addiert)</small></span>
+      <span>Fixed bonus <small>(the modifier field is added on top when rolling)</small></span>
       <span class="bonus-row">
         <input type="text" inputmode="numeric" autocomplete="off" bind:value={bonusText} onfocus={(e) => e.currentTarget.select()} />
-        <button type="button" class="ghost" aria-label="Vorzeichen wechseln" onclick={() => (bonusText = String(-bonus))}>±</button>
+        <button type="button" class="ghost" aria-label="Flip sign" onclick={() => (bonusText = String(-bonus))}>±</button>
       </span>
     </label>
 
     <div class="dialog-actions">
       {#if editing}
-        <button type="button" class="ghost danger" onclick={remove}>Löschen</button>
+        <button type="button" class="ghost danger" onclick={remove}>Delete</button>
       {/if}
       <span class="spacer"></span>
-      <button type="button" class="ghost" onclick={() => dialog.close()}>Abbrechen</button>
-      <button type="submit" class="primary" disabled={!canSave}>Speichern</button>
+      <button type="button" class="ghost" onclick={() => dialog.close()}>Cancel</button>
+      <button type="submit" class="primary" disabled={!canSave}>Save</button>
     </div>
   </form>
 </dialog>

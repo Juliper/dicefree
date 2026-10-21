@@ -2,26 +2,27 @@
 
 import { ABILITIES, isDie, normalizePool, type Ability, type DiceGroup, type RollKind } from "./dice";
 import { amountAt, damageTypeLabel, parseStoredSpell, type Spell } from "./spells";
+import { ABILITY_LABEL } from "./effects";
 
 export const SKILLS = [
-  { id: "acrobatics", name: "Akrobatik", ability: "dex" },
-  { id: "animal-handling", name: "Mit Tieren umgehen", ability: "wis" },
-  { id: "arcana", name: "Arkane Kunde", ability: "int" },
-  { id: "athletics", name: "Athletik", ability: "str" },
-  { id: "deception", name: "Täuschen", ability: "cha" },
-  { id: "history", name: "Geschichte", ability: "int" },
-  { id: "insight", name: "Motiv erkennen", ability: "wis" },
-  { id: "intimidation", name: "Einschüchtern", ability: "cha" },
-  { id: "investigation", name: "Nachforschungen", ability: "int" },
-  { id: "medicine", name: "Heilkunde", ability: "wis" },
-  { id: "nature", name: "Naturkunde", ability: "int" },
-  { id: "perception", name: "Wahrnehmung", ability: "wis" },
-  { id: "performance", name: "Auftreten", ability: "cha" },
-  { id: "persuasion", name: "Überzeugen", ability: "cha" },
+  { id: "acrobatics", name: "Acrobatics", ability: "dex" },
+  { id: "animal-handling", name: "Animal Handling", ability: "wis" },
+  { id: "arcana", name: "Arcana", ability: "int" },
+  { id: "athletics", name: "Athletics", ability: "str" },
+  { id: "deception", name: "Deception", ability: "cha" },
+  { id: "history", name: "History", ability: "int" },
+  { id: "insight", name: "Insight", ability: "wis" },
+  { id: "intimidation", name: "Intimidation", ability: "cha" },
+  { id: "investigation", name: "Investigation", ability: "int" },
+  { id: "medicine", name: "Medicine", ability: "wis" },
+  { id: "nature", name: "Nature", ability: "int" },
+  { id: "perception", name: "Perception", ability: "wis" },
+  { id: "performance", name: "Performance", ability: "cha" },
+  { id: "persuasion", name: "Persuasion", ability: "cha" },
   { id: "religion", name: "Religion", ability: "int" },
-  { id: "sleight-of-hand", name: "Fingerfertigkeit", ability: "dex" },
-  { id: "stealth", name: "Heimlichkeit", ability: "dex" },
-  { id: "survival", name: "Überlebenskunst", ability: "wis" },
+  { id: "sleight-of-hand", name: "Sleight of Hand", ability: "dex" },
+  { id: "stealth", name: "Stealth", ability: "dex" },
+  { id: "survival", name: "Survival", ability: "wis" },
 ] as const satisfies readonly { id: string; name: string; ability: Ability }[];
 
 export type SkillId = (typeof SKILLS)[number]["id"];
@@ -66,7 +67,7 @@ const clamp = (v: number, [min, max]: readonly [number, number]) => Math.min(max
 const newId = () =>
   typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
 
-export function newCharacter(name = "Neuer Charakter"): Character {
+export function newCharacter(name = "New Character"): Character {
   return {
     id: newId(),
     name,
@@ -82,7 +83,7 @@ export function newCharacter(name = "Neuer Charakter"): Character {
 export function newAttack(): Attack {
   return {
     id: newId(),
-    name: "Neuer Angriff",
+    name: "New Attack",
     ability: "str",
     proficient: true,
     magic: 0,
@@ -121,14 +122,14 @@ export const concentrationDC = (damage: number) => Math.min(30, Math.max(10, Mat
 
 /** Death saving throw: 10+ succeeds; a natural 20 restores 1 HP, a natural 1 counts as two failures. */
 export function deathSaveOutcome(natural: number, total: number): string {
-  if (natural === 20) return "Natürliche 20: Du kommst mit 1 TP wieder zu Bewusstsein!";
-  if (natural === 1) return "Natürliche 1: zählt als zwei Fehlschläge";
-  return total >= 10 ? "Erfolg" : "Fehlschlag";
+  if (natural === 20) return "Natural 20: you regain 1 HP and wake up!";
+  if (natural === 1) return "Natural 1: counts as two failures";
+  return total >= 10 ? "Success" : "Failure";
 }
 
 // --- Dice notation ---
 
-/** Parses "1d8", "2d6 + 1d4" (also "d6", "2W6"); returns null for anything else. */
+/** Parses "1d8", "2d6 + 1d4" (also "d6", German "2W6"); returns null for anything else. */
 export function parseDice(text: string): DiceGroup[] | null {
   const parts = text.toLowerCase().replace(/\s+/g, "").split("+").filter(Boolean);
   if (!parts.length) return null;
@@ -195,15 +196,15 @@ export const concentrationRoll = (c: Character): SheetRoll => ({
   ability: "con",
   dice: d20,
   modifier: saveMod(c, "con"),
-  label: "Konzentration",
-  notes: ["SG = 10 oder halber erlittener Schaden (höherer Wert, max. 30)"],
+  label: "Concentration",
+  notes: ["DC = 10 or half the damage taken, whichever is higher (max 30)"],
 });
 
 export const deathSaveRoll = (): SheetRoll => ({
   kind: "save",
   dice: d20,
   modifier: 0,
-  label: "Todesrettungswurf",
+  label: "Death Saving Throw",
   deathSave: true,
 });
 
@@ -235,15 +236,15 @@ export function spellDamageRoll(c: Character, spell: Spell, slot: number): Sheet
   if (spell.save) {
     const dc = spellSaveDC(c);
     notes.push(
-      `Ziel: ${ABILITY_SHORT[spell.save.ability]}-Rettungswurf${dc !== null ? ` gegen SG ${dc}` : ""}` +
-        (spell.save.onSuccess === "half" ? " – bei Erfolg halber Schaden" : ""),
+      `Target: ${ABILITY_LABEL[spell.save.ability]} saving throw${dc !== null ? ` vs. DC ${dc}` : ""}` +
+        (spell.save.onSuccess === "half" ? " – half damage on a success" : ""),
     );
   }
   return {
     kind: "damage",
     dice,
     modifier: 0,
-    label: `${spell.name}${slot > spell.level && spell.level > 0 ? ` (Grad ${slot})` : ""}${type}`,
+    label: `${spell.name}${slot > spell.level && spell.level > 0 ? ` (level ${slot})` : ""}${type}`,
     notes,
   };
 }
@@ -255,11 +256,10 @@ export function spellHealRoll(c: Character, spell: Spell, slot: number): SheetRo
     kind: "free",
     dice: amountAt(spell.heal, spell.level, slot, c.level),
     modifier: mod,
-    label: `${spell.name}${slot > spell.level ? ` (Grad ${slot})` : ""}: Heilung`,
+    label: `${spell.name}${slot > spell.level ? ` (level ${slot})` : ""}: Healing`,
   };
 }
 
-const ABILITY_SHORT: Record<Ability, string> = { str: "STÄ", dex: "GES", con: "KON", int: "INT", wis: "WEI", cha: "CHA" };
 
 // --- Parsing (tolerant, for import and device storage) ---
 
@@ -281,7 +281,7 @@ function parseAttack(raw: unknown): Attack | null {
     : [];
   return {
     id: str(a.id, newId(), 64),
-    name: str(a.name, "Angriff"),
+    name: str(a.name, "Attack"),
     ability: isAbility(a.ability) ? a.ability : "str",
     proficient: a.proficient !== false,
     magic: int(a.magic, [-5, 5], 0),
@@ -307,7 +307,7 @@ export function parseCharacter(raw: unknown): Character | null {
   }
   const out: Character = {
     id: str(c.id, newId(), 64),
-    name: str(c.name, "Charakter"),
+    name: str(c.name, "Character"),
     level: int(c.level, LEVEL_RANGE, 1),
     scores,
     saves: Array.isArray(c.saves) ? ABILITIES.filter((a) => (c.saves as unknown[]).includes(a)) : [],

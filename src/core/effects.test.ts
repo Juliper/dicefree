@@ -9,7 +9,7 @@ const sequence = (...values: number[]): RandomSource => {
 
 describe("applyEffects", () => {
   it("adds Bless to attacks and saves but not to checks", () => {
-    expect(applyEffects({ kind: "attack" }, { bless: 1 }).bonusDice).toEqual([{ source: "Segnen", die: 4, count: 1, sign: 1 }]);
+    expect(applyEffects({ kind: "attack" }, { bless: 1 }).bonusDice).toEqual([{ source: "Bless", die: 4, count: 1, sign: 1 }]);
     expect(applyEffects({ kind: "save", ability: "wis" }, { bless: 1 }).bonusDice).toHaveLength(1);
     expect(applyEffects({ kind: "check" }, { bless: 1 }).bonusDice).toEqual([]);
   });
@@ -19,28 +19,28 @@ describe("applyEffects", () => {
   });
 
   it("applies exhaustion per level to all D20 Tests", () => {
-    expect(applyEffects({ kind: "check" }, { exhaustion: 3 }).flats).toEqual([{ source: "Erschöpfung 3", value: -6 }]);
+    expect(applyEffects({ kind: "check" }, { exhaustion: 3 }).flats).toEqual([{ source: "Exhaustion 3", value: -6 }]);
   });
 
   it("gives disadvantage with the reason", () => {
     const a = applyEffects({ kind: "attack" }, { poisoned: 1, prone: 1 });
     expect(a.mode).toBe("disadvantage");
-    expect(a.notes).toEqual(["Nachteil durch Vergiftet, Liegend"]);
+    expect(a.notes).toEqual(["Disadvantage from Poisoned, Prone"]);
   });
 
   it("cancels advantage and disadvantage regardless of how many sources", () => {
     const a = applyEffects({ kind: "attack" }, { poisoned: 1, prone: 1, invisible: 1 });
     expect(a.mode).toBe("normal");
-    expect(a.notes[0]).toContain("heben sich auf");
+    expect(a.notes[0]).toContain("cancel out");
   });
 
   it("treats the manual choice as one more source", () => {
     expect(applyEffects({ kind: "attack" }, {}, "advantage")).toMatchObject({ mode: "advantage", notes: [] });
     const both = applyEffects({ kind: "attack" }, { poisoned: 1 }, "advantage");
     expect(both.mode).toBe("normal");
-    expect(both.notes).toEqual(["Vorteil (deine Wahl) und Nachteil (Vergiftet) heben sich auf"]);
+    expect(both.notes).toEqual(["Advantage (your choice) and Disadvantage (Poisoned) cancel out"]);
     expect(applyEffects({ kind: "attack" }, { invisible: 1 }, "advantage").notes).toEqual([
-      "Vorteil durch deine Wahl, Unsichtbar",
+      "Advantage from your choice, Invisible",
     ]);
   });
 
@@ -73,7 +73,7 @@ describe("notes", () => {
     const req = buildRoll({ kind: "save", ability: "con", dice: [], modifier: 1, notes: ["SG 10"] }, { poisoned: 1, bless: 1 }, "advantage");
     expect(req.notes).toEqual(["SG 10"]);
     const req2 = buildRoll({ kind: "attack", dice: [], modifier: 1, notes: ["x"] }, { poisoned: 1 }, "normal");
-    expect(req2.notes).toEqual(["x", "Nachteil durch Vergiftet"]);
+    expect(req2.notes).toEqual(["x", "Disadvantage from Poisoned"]);
   });
 });
 
@@ -95,9 +95,9 @@ describe("buildRoll + roll", () => {
     const r = roll(req, sequence(14, 2));
     expect(r.groups).toEqual([
       { die: 20, rolls: [15] },
-      { die: 4, rolls: [3], source: "Segnen" },
+      { die: 4, rolls: [3], source: "Bless" },
     ]);
-    expect(r.flats).toEqual([{ source: "Erschöpfung 1", value: -2 }]);
+    expect(r.flats).toEqual([{ source: "Exhaustion 1", value: -2 }]);
     expect(r.total).toBe(15 + 5 + 3 - 2);
     expect(r.kind).toBe("attack");
   });
@@ -111,7 +111,7 @@ describe("buildRoll + roll", () => {
     const r = roll(buildRoll({ kind: "attack", dice: [], modifier: 0 }, { invisible: 1 }, "normal"), sequence(2, 17));
     expect(r.mode).toBe("advantage");
     expect(r.groups[0]).toEqual({ die: 20, rolls: [18], dropped: [3] });
-    expect(r.notes).toEqual(["Vorteil durch Unsichtbar"]);
+    expect(r.notes).toEqual(["Advantage from Invisible"]);
   });
 
   it("doubles damage dice on a crit but not the modifier", () => {

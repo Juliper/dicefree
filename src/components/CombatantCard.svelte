@@ -56,33 +56,33 @@
 </script>
 
 <article class="combatant" class:down class:current id="combatant-{c.id}" aria-current={current ? "true" : undefined}>
-  {#if current}<p class="turn-banner">▶ Ist dran</p>{/if}
+  {#if current}<p class="turn-banner">▶ Their turn</p>{/if}
   <header class="combatant-head">
     <div>
       <h3>{c.label}</h3>
       <p class="spell-meta">
-        {sizeLabel(m.size)} {typeLabel(m.type)} · HG {crLabel(m.cr)} ({m.xp.toLocaleString("de-DE")} EP)
+        {sizeLabel(m.size)} {typeLabel(m.type)} · CR {crLabel(m.cr)} ({m.xp.toLocaleString("en-US")} XP)
       </p>
     </div>
-    <button type="button" class="ghost small danger" aria-label="{c.label} entfernen" onclick={() => onremove(c.id)}>✕</button>
+    <button type="button" class="ghost small danger" aria-label="Remove {c.label}" onclick={() => onremove(c.id)}>✕</button>
   </header>
 
   <div class="combatant-stats">
-    <span class="stat"><small>RK</small>{m.ac}</span>
-    <span class="stat hp" class:low={c.hp <= c.maxHp / 2}><small>TP</small>{c.hp}/{c.maxHp}</span>
+    <span class="stat"><small>AC</small>{m.ac}</span>
+    <span class="stat hp" class:low={c.hp <= c.maxHp / 2}><small>HP</small>{c.hp}/{c.maxHp}</span>
     <div class="hp-edit">
-      <input type="text" inputmode="numeric" placeholder="Wert" aria-label="Schaden oder Heilung für {c.label}" bind:value={amountText} />
-      <button type="button" onclick={() => changeHp(-1)}>Schaden</button>
-      <button type="button" onclick={() => changeHp(1)}>Heilen</button>
+      <input type="text" inputmode="numeric" placeholder="Amount" aria-label="Damage or healing for {c.label}" bind:value={amountText} />
+      <button type="button" onclick={() => changeHp(-1)}>Damage</button>
+      <button type="button" onclick={() => changeHp(1)}>Heal</button>
     </div>
   </div>
 
   <div class="quick-rolls">
     <button type="button" onclick={onrollinit}
-      >Initiative <b>{formatModifier(monsterMod(m, "dex"))}</b>{#if initiative !== undefined}<small> → {initiative}</small>{/if}</button
+      >Initiative <b>{formatModifier(monsterMod(m, "dex"))}</b>{#if initiative !== undefined}<small>{" → "}{initiative}</small>{/if}</button
     >
-    <button type="button" onclick={() => { const r = hitPointsRoll(m); if (r) onrollhp({ ...r, label: label("Trefferpunkte") }); }}
-      >TP würfeln <small>({m.hitDice})</small></button
+    <button type="button" onclick={() => { const r = hitPointsRoll(m); if (r) onrollhp({ ...r, label: label("Hit Points") }); }}
+      >Roll HP <small>({m.hitDice})</small></button
     >
   </div>
 
@@ -99,25 +99,25 @@
         <div class="monster-action">
           <div class="monster-action-head">
             <b>{a.name}</b>
-            {#if a.recharge}<small class="tag-text">Aufladung {a.recharge}{a.recharge < 6 ? "–6" : ""}</small>{/if}
-            {#if a.perDay}<small class="tag-text">{a.perDay}/Tag</small>{/if}
+            {#if a.recharge}<small class="tag-text">Recharge {a.recharge}{a.recharge < 6 ? "–6" : ""}</small>{/if}
+            {#if a.perDay}<small class="tag-text">{a.perDay}/Day</small>{/if}
           </div>
           {#if a.dc}
             <p class="spell-save">
-              <b>{ABILITY_LABEL[a.dc.ability]}-Rettungswurf SG {a.dc.value}</b>
-              {#if a.dc.success === "half"}<span class="spell-success">· Erfolg: halber Schaden</span>{/if}
+              <b>{ABILITY_LABEL[a.dc.ability]} saving throw DC {a.dc.value}</b>
+              {#if a.dc.success === "half"}<span class="spell-success">· Success: half damage</span>{/if}
             </p>
           {/if}
           {#if rollable}
             <div class="spell-actions">
               {#if a.attackBonus !== undefined}
-                <button type="button" onclick={() => roll(monsterAttackRoll(label(a.name), a))}>Angriff <b>{formatModifier(a.attackBonus)}</b></button>
+                <button type="button" onclick={() => roll(monsterAttackRoll(label(a.name), a))}>Attack <b>{formatModifier(a.attackBonus)}</b></button>
               {/if}
               {#if a.damage.length}
-                <button type="button" onclick={() => roll(monsterDamageRoll(label(a.name), a))}>Schaden <b>{damageText(a.damage)}</b></button>
+                <button type="button" onclick={() => roll(monsterDamageRoll(label(a.name), a))}>Damage <b>{damageText(a.damage)}</b></button>
               {/if}
               {#if a.recharge}
-                <button type="button" onclick={() => roll(rechargeRoll(label(a.name), a))}>Aufladen (W6)</button>
+                <button type="button" onclick={() => roll(rechargeRoll(label(a.name), a))}>Recharge (d6)</button>
               {/if}
             </div>
           {/if}
@@ -135,19 +135,19 @@
   {/each}
 
   {#if m.spellcasting}
-    <h4 class="spell-level">Zauberwirken</h4>
+    <h4 class="spell-level">Spellcasting</h4>
     <div class="monster-action">
       <p class="spell-save">
-        {#if m.spellcasting.dc}<b>Zauber-SG {m.spellcasting.dc}</b>{/if}
-        {#if m.spellcasting.attack !== undefined}· Zauberangriff <b>{formatModifier(m.spellcasting.attack)}</b>{/if}
+        {#if m.spellcasting.dc}<b>Spell save DC {m.spellcasting.dc}</b>{/if}
+        {#if m.spellcasting.attack !== undefined}· Spell attack <b>{formatModifier(m.spellcasting.attack)}</b>{/if}
       </p>
       {#if m.spellcasting.attack !== undefined}
         <div class="spell-actions">
           <button
             type="button"
             onclick={() =>
-              roll({ kind: "attack", dice: [{ die: 20, count: 1 }], modifier: m.spellcasting?.attack ?? 0, label: label("Zauberangriff") })}
-            >Zauberangriff <b>{formatModifier(m.spellcasting.attack)}</b></button
+              roll({ kind: "attack", dice: [{ die: 20, count: 1 }], modifier: m.spellcasting?.attack ?? 0, label: label("Spell Attack") })}
+            >Spell Attack <b>{formatModifier(m.spellcasting.attack)}</b></button
           >
         </div>
       {/if}
@@ -156,11 +156,11 @@
   {/if}
 
   <details class="combatant-more">
-    <summary>Attribute, Rettungswürfe & Fertigkeiten</summary>
+    <summary>Abilities, saves & skills</summary>
     <div class="abilities-grid">
       {#each ABILITIES as ab (ab)}
         <div class="ability-tile">
-          <button type="button" class="ability-check" onclick={() => roll(monsterCheckRoll(m, label(`${ABILITY_LABEL[ab]}-Wurf`), ab))}>
+          <button type="button" class="ability-check" onclick={() => roll(monsterCheckRoll(m, label(`${ABILITY_LABEL[ab]} Check`), ab))}>
             <span class="ability-abbr">{ABILITY_LABEL[ab]}</span>
             <span class="ability-mod">{formatModifier(monsterMod(m, ab))}</span>
             <span class="ability-score">{m.scores[ab]}</span>
@@ -169,8 +169,8 @@
             type="button"
             class="ability-save"
             class:proficient={m.saves[ab] !== undefined}
-            onclick={() => roll(monsterSaveRoll(m, label(`${ABILITY_LABEL[ab]}-Rettungswurf`), ab))}
-            >Rettung {formatModifier(monsterSave(m, ab))}</button
+            onclick={() => roll(monsterSaveRoll(m, label(`${ABILITY_LABEL[ab]} Save`), ab))}
+            >Save {formatModifier(monsterSave(m, ab))}</button
           >
         </div>
       {/each}
@@ -185,18 +185,18 @@
       </div>
     {/if}
     <dl class="monster-facts">
-      {#if m.speed}<dt>Bewegung</dt><dd>{m.speed}</dd>{/if}
-      {#if m.senses}<dt>Sinne</dt><dd>{m.senses}</dd>{/if}
-      {#if m.languages}<dt>Sprachen</dt><dd>{m.languages}</dd>{/if}
-      {#if m.resistances.length}<dt>Resistenzen</dt><dd>{m.resistances.map(damageTypeLabel).join(", ")}</dd>{/if}
-      {#if m.immunities.length}<dt>Immunitäten</dt><dd>{m.immunities.map(damageTypeLabel).join(", ")}</dd>{/if}
-      {#if m.vulnerabilities.length}<dt>Anfälligkeiten</dt><dd>{m.vulnerabilities.map(damageTypeLabel).join(", ")}</dd>{/if}
-      {#if m.conditionImmunities.length}<dt>Zustandsimmun</dt><dd>{m.conditionImmunities.join(", ")}</dd>{/if}
+      {#if m.speed}<dt>Speed</dt><dd>{m.speed}</dd>{/if}
+      {#if m.senses}<dt>Senses</dt><dd>{m.senses}</dd>{/if}
+      {#if m.languages}<dt>Languages</dt><dd>{m.languages}</dd>{/if}
+      {#if m.resistances.length}<dt>Resistances</dt><dd>{m.resistances.map(damageTypeLabel).join(", ")}</dd>{/if}
+      {#if m.immunities.length}<dt>Immunities</dt><dd>{m.immunities.map(damageTypeLabel).join(", ")}</dd>{/if}
+      {#if m.vulnerabilities.length}<dt>Vulnerabilities</dt><dd>{m.vulnerabilities.map(damageTypeLabel).join(", ")}</dd>{/if}
+      {#if m.conditionImmunities.length}<dt>Condition imm.</dt><dd>{m.conditionImmunities.join(", ")}</dd>{/if}
     </dl>
   </details>
 
   <details class="combatant-more">
-    <summary>Zustände & Effekte{active.length ? ` (${active.length})` : ""}</summary>
+    <summary>Conditions & effects{active.length ? ` (${active.length})` : ""}</summary>
     <div class="effect-chips">
       {#each EFFECTS as e (e.id)}
         {@const level = c.effects[e.id] ?? 0}

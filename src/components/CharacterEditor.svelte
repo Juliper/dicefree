@@ -34,7 +34,7 @@
   );
   let armorText = $state(initial.armorClass === undefined ? "" : String(initial.armorClass));
 
-  const PROF_LABEL = ["–", "Geübt", "Expertise"] as const;
+  const PROF_LABEL = ["–", "Proficient", "Expertise"] as const;
   const damageValid = (id: string) => parseDice(damageText[id] ?? "") !== null;
   const allValid = $derived(draft.attacks.every((a) => damageValid(a.id)) && draft.name.trim().length > 0);
 
@@ -73,7 +73,7 @@
   }
 
   async function remove() {
-    if (await ask(`„${character.name}“ wirklich löschen?`, { confirmLabel: "Löschen", danger: true })) ondelete(character.id);
+    if (await ask(`Delete “${character.name}”?`, { confirmLabel: "Delete", danger: true })) ondelete(character.id);
   }
 </script>
 
@@ -84,18 +84,18 @@
       <input type="text" bind:value={draft.name} maxlength="40" autocomplete="off" />
     </label>
     <label class="field narrow">
-      <span>Stufe</span>
+      <span>Level</span>
       <input type="number" inputmode="numeric" min={LEVEL_RANGE[0]} max={LEVEL_RANGE[1]} bind:value={draft.level} />
     </label>
     <label class="field narrow">
-      <span>RK</span>
+      <span>AC</span>
       <input type="text" inputmode="numeric" bind:value={armorText} placeholder="–" />
     </label>
   </div>
-  <p class="hint">Übungsbonus auf Stufe {draft.level || 1}: {formatModifier(proficiencyBonus(draft.level || 1))}</p>
+  <p class="hint">Proficiency bonus at level {draft.level || 1}: {formatModifier(proficiencyBonus(draft.level || 1))}</p>
 
   <fieldset>
-    <legend>Attributswerte</legend>
+    <legend>Ability Scores</legend>
     <div class="score-grid">
       {#each ABILITIES as a (a)}
         <label class="score">
@@ -108,7 +108,7 @@
   </fieldset>
 
   <fieldset>
-    <legend>Geübte Rettungswürfe</legend>
+    <legend>Saving Throw Proficiencies</legend>
     <div class="toggle-row">
       {#each ABILITIES as a (a)}
         <button type="button" class="effect-chip" class:on={draft.saves.includes(a)} aria-pressed={draft.saves.includes(a)} onclick={() => toggleSave(a)}
@@ -119,9 +119,9 @@
   </fieldset>
 
   <fieldset>
-    <legend>Zauberattribut</legend>
+    <legend>Spellcasting Ability</legend>
     <div class="toggle-row">
-      <button type="button" class="effect-chip" class:on={!draft.spellAbility} onclick={() => delete draft.spellAbility}>keins</button>
+      <button type="button" class="effect-chip" class:on={!draft.spellAbility} onclick={() => delete draft.spellAbility}>none</button>
       {#each ["int", "wis", "cha"] as const as a (a)}
         <button type="button" class="effect-chip" class:on={draft.spellAbility === a} onclick={() => (draft.spellAbility = a)}
           >{ABILITY_LABEL[a]}</button
@@ -131,7 +131,7 @@
   </fieldset>
 
   <fieldset>
-    <legend>Fertigkeiten <small>(antippen: – → Geübt → Expertise)</small></legend>
+    <legend>Skills <small>(tap: – → Proficient → Expertise)</small></legend>
     <div class="skill-edit-list">
       {#each SKILLS as s (s.id)}
         {@const p = draft.skills[s.id] ?? 0}
@@ -144,7 +144,7 @@
   </fieldset>
 
   <fieldset>
-    <legend>Angriffe</legend>
+    <legend>Attacks</legend>
     {#each draft.attacks as a (a.id)}
       <div class="attack-edit">
         <div class="editor-row">
@@ -152,43 +152,43 @@
             <span>Name</span>
             <input type="text" bind:value={a.name} maxlength="40" autocomplete="off" />
           </label>
-          <button type="button" class="ghost danger remove" aria-label="{a.name} entfernen" onclick={() => removeAttack(a.id)}>✕</button>
+          <button type="button" class="ghost danger remove" aria-label="Remove {a.name}" onclick={() => removeAttack(a.id)}>✕</button>
         </div>
         <div class="editor-row">
           <label class="field">
-            <span>Attribut</span>
+            <span>Ability</span>
             <select bind:value={a.ability}>
               {#each ABILITIES as ab (ab)}<option value={ab}>{ABILITY_LABEL[ab]}</option>{/each}
             </select>
           </label>
           <label class="field narrow">
-            <span>Magisch</span>
+            <span>Magic</span>
             <input type="number" inputmode="numeric" min="-5" max="5" bind:value={a.magic} />
           </label>
           <label class="field grow">
-            <span>Schaden</span>
+            <span>Damage</span>
             <input type="text" bind:value={damageText[a.id]} class:invalid={!damageValid(a.id)} placeholder="1d8" autocomplete="off" />
           </label>
         </div>
         <div class="editor-row">
           <label class="field grow">
-            <span>Schadensart</span>
-            <input type="text" bind:value={a.damageType} maxlength="40" placeholder="z. B. Hieb" autocomplete="off" />
+            <span>Damage type</span>
+            <input type="text" bind:value={a.damageType} maxlength="40" placeholder="e.g. Slashing" autocomplete="off" />
           </label>
         </div>
         <div class="checks">
-          <label class="switch"><input type="checkbox" bind:checked={a.proficient} /> <span>Geübt</span></label>
-          <label class="switch"><input type="checkbox" bind:checked={a.addModToDamage} /> <span>Attributsmod. auf Schaden</span></label>
+          <label class="switch"><input type="checkbox" bind:checked={a.proficient} /> <span>Proficient</span></label>
+          <label class="switch"><input type="checkbox" bind:checked={a.addModToDamage} /> <span>Add ability mod to damage</span></label>
         </div>
       </div>
     {/each}
-    <button type="button" class="ghost" onclick={addAttack}>+ Angriff hinzufügen</button>
+    <button type="button" class="ghost" onclick={addAttack}>+ Add attack</button>
   </fieldset>
 
   <div class="dialog-actions sticky-actions">
-    <button type="button" class="ghost danger" onclick={remove}>Löschen</button>
+    <button type="button" class="ghost danger" onclick={remove}>Delete</button>
     <span class="spacer"></span>
-    <button type="button" class="ghost" onclick={oncancel}>Abbrechen</button>
-    <button type="submit" class="primary" disabled={!allValid}>Speichern</button>
+    <button type="button" class="ghost" onclick={oncancel}>Cancel</button>
+    <button type="submit" class="primary" disabled={!allValid}>Save</button>
   </div>
 </form>

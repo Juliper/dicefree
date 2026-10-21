@@ -14,11 +14,11 @@ import {
 } from "./dice";
 
 export const ABILITY_LABEL: Record<Ability, string> = {
-  str: "STÄ",
-  dex: "GES",
-  con: "KON",
+  str: "STR",
+  dex: "DEX",
+  con: "CON",
   int: "INT",
-  wis: "WEI",
+  wis: "WIS",
   cha: "CHA",
 };
 
@@ -59,114 +59,114 @@ export const EFFECTS: EffectDef[] = [
   // --- Spells ---
   {
     id: "bless",
-    name: "Segnen",
+    name: "Bless",
     group: "spell",
-    summary: "+1d4 auf Angriffs- und Rettungswürfe",
+    summary: "+1d4 to attack rolls and saving throws",
     concentration: true,
     impact: (c) => (on(["attack", "save"], c) ? { dice: d4(1) } : null),
   },
   {
     id: "bane",
-    name: "Verderben",
+    name: "Bane",
     group: "spell",
-    summary: "−1d4 auf Angriffs- und Rettungswürfe",
+    summary: "−1d4 to attack rolls and saving throws",
     impact: (c) => (on(["attack", "save"], c) ? { dice: d4(-1) } : null),
   },
   {
     id: "guidance",
-    name: "Anleitung",
+    name: "Guidance",
     group: "spell",
-    summary: "+1d4 auf Attributswürfe (2024: eine gewählte Fertigkeit)",
+    summary: "+1d4 to ability checks (2024: one chosen skill)",
     concentration: true,
     impact: (c) => (on(["check"], c) ? { dice: d4(1) } : null),
   },
   // --- Conditions ---
   {
     id: "poisoned",
-    name: "Vergiftet",
+    name: "Poisoned",
     group: "condition",
-    summary: "Nachteil auf Angriffs- und Attributswürfe",
+    summary: "Disadvantage on attack rolls and ability checks",
     impact: (c) => (on(["attack", "check"], c) ? { disadvantage: true } : null),
   },
   {
     id: "frightened",
-    name: "Verängstigt",
+    name: "Frightened",
     group: "condition",
-    summary: "Nachteil auf Angriffs- und Attributswürfe, solange die Quelle sichtbar ist",
+    summary: "Disadvantage on attack rolls and ability checks while the source is in sight",
     impact: (c) => (on(["attack", "check"], c) ? { disadvantage: true } : null),
   },
   {
     id: "blinded",
-    name: "Blind",
+    name: "Blinded",
     group: "condition",
-    summary: "Nachteil auf eigene Angriffswürfe",
+    summary: "Disadvantage on your attack rolls",
     impact: (c) => (on(["attack"], c) ? { disadvantage: true } : null),
   },
   {
     id: "prone",
-    name: "Liegend",
+    name: "Prone",
     group: "condition",
-    summary: "Nachteil auf eigene Angriffswürfe",
+    summary: "Disadvantage on your attack rolls",
     impact: (c) => (on(["attack"], c) ? { disadvantage: true } : null),
   },
   {
     id: "restrained",
-    name: "Festgesetzt",
+    name: "Restrained",
     group: "condition",
-    summary: "Nachteil auf Angriffswürfe und GES-Rettungswürfe",
+    summary: "Disadvantage on attack rolls and Dexterity saving throws",
     impact: (c) =>
       on(["attack"], c) || (c.kind === "save" && c.ability === "dex") ? { disadvantage: true } : null,
   },
   {
     id: "grappled",
-    name: "Gepackt",
+    name: "Grappled",
     group: "condition",
-    summary: "Nachteil auf Angriffe gegen andere als den Packenden",
+    summary: "Disadvantage on attacks against anyone but the grappler",
     impact: (c) => (on(["attack"], c) ? { disadvantage: true } : null),
   },
   {
     id: "invisible",
-    name: "Unsichtbar",
+    name: "Invisible",
     group: "condition",
-    summary: "Vorteil auf eigene Angriffswürfe",
+    summary: "Advantage on your attack rolls",
     impact: (c) => (on(["attack"], c) ? { advantage: true } : null),
   },
   {
     id: "paralyzed",
-    name: "Gelähmt / Betäubt / Bewusstlos",
+    name: "Paralyzed / Stunned / Unconscious",
     group: "condition",
-    summary: "STÄ- und GES-Rettungswürfe scheitern automatisch",
+    summary: "Automatically fail Strength and Dexterity saving throws",
     impact: (c) => (c.kind === "save" && (c.ability === "str" || c.ability === "dex") ? { autoFail: true } : null),
   },
   {
     id: "exhaustion",
-    name: "Erschöpfung",
+    name: "Exhaustion",
     group: "condition",
-    summary: "−2 pro Stufe auf alle d20-Tests (Stufe 6 = Tod)",
+    summary: "−2 per level to all D20 Tests (level 6 = death)",
     maxLevel: 5,
     impact: (c, level) => (isD20Test(c.kind) ? { flat: -2 * level } : null),
   },
   // --- Situations ---
   {
     id: "help",
-    name: "Hilfe erhalten",
+    name: "Helped",
     group: "situation",
-    summary: "Vorteil auf den nächsten Angriffs- oder Attributswurf (verbraucht sich)",
+    summary: "Advantage on the next attack roll or ability check (used up)",
     consumable: true,
     impact: (c) => (on(["attack", "check"], c) ? { advantage: true } : null),
   },
   {
     id: "cover-half",
-    name: "Halbe Deckung",
+    name: "Half Cover",
     group: "situation",
-    summary: "+2 auf GES-Rettungswürfe",
+    summary: "+2 to Dexterity saving throws",
     impact: (c) => (c.kind === "save" && c.ability === "dex" ? { flat: 2 } : null),
   },
   {
     id: "cover-three-quarters",
-    name: "Dreivierteldeckung",
+    name: "Three-Quarters Cover",
     group: "situation",
-    summary: "+5 auf GES-Rettungswürfe",
+    summary: "+5 to Dexterity saving throws",
     impact: (c) => (c.kind === "save" && c.ability === "dex" ? { flat: 5 } : null),
   },
 ];
@@ -199,7 +199,7 @@ export function parseActiveEffects(raw: unknown): ActiveEffects {
   return out;
 }
 
-const MANUAL = "deine Wahl";
+const MANUAL = "your choice";
 
 /** Everything the active effects add to a roll of the given kind. */
 export interface Applied {
@@ -235,7 +235,7 @@ export function applyEffects(ctx: RollContext, active: ActiveEffects, chosen: Ro
     if (hit.disadvantage) dis.push(source);
     if (hit.autoFail) {
       out.autoFail = true;
-      out.notes.push(`Scheitert automatisch (${source})`);
+      out.notes.push(`Automatically fails (${source})`);
     }
   }
 
@@ -243,20 +243,20 @@ export function applyEffects(ctx: RollContext, active: ActiveEffects, chosen: Ro
   const why = (list: string[]) => list.join(", ");
   const onlyManual = (list: string[]) => list.length === 1 && list[0] === MANUAL;
   if (adv.length && dis.length) {
-    out.notes.push(`Vorteil (${why(adv)}) und Nachteil (${why(dis)}) heben sich auf`);
+    out.notes.push(`Advantage (${why(adv)}) and Disadvantage (${why(dis)}) cancel out`);
   } else if (adv.length) {
     out.mode = "advantage";
-    if (!onlyManual(adv)) out.notes.push(`Vorteil durch ${why(adv)}`);
+    if (!onlyManual(adv)) out.notes.push(`Advantage from ${why(adv)}`);
   } else if (dis.length) {
     out.mode = "disadvantage";
-    if (!onlyManual(dis)) out.notes.push(`Nachteil durch ${why(dis)}`);
+    if (!onlyManual(dis)) out.notes.push(`Disadvantage from ${why(dis)}`);
   }
   return out;
 }
 
 /**
  * Builds the final request for a roll: D20 Tests always roll a single d20 plus the
- * Bonus/Malus; effects only touch D20 Tests (damage gets the crit option instead).
+ * modifier; effects only touch D20 Tests (damage gets the crit option instead).
  */
 export function buildRoll(
   base: RollRequest & { kind: RollKind },

@@ -1,85 +1,86 @@
 # Dicefree
 
-Simpler Würfel-Roller ohne Account und ohne Server. Gespeicherte Würfe und Einstellungen bleiben lokal auf dem Gerät (Browser-Speicher); der Verlauf nicht. Per JSON-Export/-Import nimmst du alles auf ein anderes Gerät mit.
+A simple D&D dice roller without accounts or servers. Saved rolls, characters, encounters and settings stay on your device (browser storage); the roll history does not. Use JSON export/import to take everything to another device.
 
-Regelbasis: **D&D 2024 / SRD 5.2** (CC-BY-4.0).
+Rules: **D&D 2024 / SRD 5.2** (CC-BY-4.0).
 
 ## Features
 
-- Standardwürfel: d4, d6, d8, d10, d12, d20, d100
-- Würfelpool aus beliebigen Würfeln plus Bonus/Malus (z. B. `1d20 + 1d4 + 5`)
-- Wurfarten im Würfel-Tab: Frei, Angriff, Schaden (mit kritischem Treffer: alle Schadenswürfel doppelt); Attributs- und Rettungswürfe laufen über den Charakterbogen
-- Vorteil/Nachteil: zwei d20, der bessere bzw. schlechtere zählt; mehrere Quellen stapeln nicht, Vorteil + Nachteil heben sich auf
-- Aktive Effekte zum Antippen, die automatisch in Angriffs-, Attributs- und Rettungswürfe einfließen – mit Quelle im Ergebnis:
-  Segnen, Verderben (−1d4), Anleitung, Vergiftet, Verängstigt, Blind, Liegend, Festgesetzt, Gepackt, Unsichtbar,
-  Gelähmt/Betäubt/Bewusstlos (STÄ-/GES-Rettung scheitert), Erschöpfung (−2 pro Stufe), Hilfe erhalten (verbraucht sich),
-  halbe/Dreivierteldeckung
-- Gespeicherte Würfe (z. B. „Langschwert: 1d8 + 3“) per +-Kachel; Bonus/Malus aus dem Feld wird beim Würfeln zusätzlich addiert
-- Hervorhebung von natürlicher 20 / natürlicher 1 (bei Angriffen und freien Würfen)
-- **Spielermodus / Charakterbogen:** Stufe, Attributswerte, geübte Rettungswürfe, 18 Fertigkeiten mit Übung/Expertise,
-  Zauberattribut, RK und Angriffe. Berechnet Übungsbonus, Zauber-SG, Zauberangriff, passive Wahrnehmung.
-  Ein Tipp würfelt Attributswurf, Rettungswurf, Fertigkeit, Initiative, Konzentration, Todesrettungswurf (mit Auswertung)
-  sowie Angriff und Schaden je Waffe – aktive Effekte und der situative Bonus/Malus fließen automatisch ein.
-  Mehrere Charaktere möglich.
-- **Zauberliste** aus dem SRD 5.2 (über dnd5eapi.co): suchen, hinzufügen, und jede Karte zeigt direkt z. B.
-  „GES-Rettungswurf gegen SG 15 · Erfolg: halber Schaden“. Zauberangriff, Schaden und Heilung per Tipp, inkl. Hochstufen
-  und Zaubertrick-Skalierung nach Charakterstufe. Hinzugefügte Zauber liegen im Charakter und funktionieren offline.
-- **Spielleiter-Modus:** Monster aus dem SRD 5.2 suchen und zu einem Kampf hinzufügen (Duplikate werden durchnummeriert,
-  EP summiert). Jede Monsterkarte zeigt RK, TP (mit Schaden/Heilen und „TP würfeln“), Aktionen, Bonusaktionen,
-  Reaktionen, legendäre Aktionen und Zauberwirken. Ein Tipp würfelt Angriff, Schaden (alle Schadensarten, mit Krit),
-  Aufladung (mit Auswertung), Initiative, Attributs- und Rettungswürfe sowie Fertigkeiten. SG-Fähigkeiten wie Odem
-  zeigen Rettungswurf, SG und „halber Schaden“. Zustände und Effekte gelten pro Monster.
-- **Vorbereitete Kämpfe** (Spielleiter): Kämpfe mit Namen und Monster-Anzahl speichern – neu zusammenstellen oder den
-  laufenden Kampf übernehmen. Am Tisch mit „Starten“ laden (ersetzt den Kampf) oder mit „+ Dazu“ als Verstärkung
-  anhängen. Die Statblöcke bleiben auf dem Gerät, also auch offline nutzbar.
-- **Initiative-Tracker** (Spielleiter): Spieler per Name anlegen (bleiben über Kämpfe hinweg), ihre angesagten Werte
-  eintragen, Monster mit einem Tipp würfeln (d20 + GES, Zustände wirken mit) oder von Hand setzen. Automatisch
-  sortiert; „Weiter“ zeigt, wer dran ist, zählt Runden und überspringt kampfunfähige Monster. Die aktive Monsterkarte
-  wird hervorgehoben.
-- Verlauf der letzten 100 Würfe (nur im Speicher), einblendbar über das Uhr-Symbol in der Ergebnis-Karte
-- JSON-Import/-Export
-- Fairer Zufall über `crypto.getRandomValues` mit Rejection Sampling
-- Installierbar als PWA (Android & iOS „Zum Home-Bildschirm“), funktioniert offline
+- Standard dice: d4, d6, d8, d10, d12, d20, d100
+- Mixed dice pool plus a modifier (e.g. `1d20 + 1d4 + 5`)
+- Roll types in the dice tab: Free, Attack, Damage (critical hit: all damage dice rolled twice); ability checks and saving throws run through the character sheet
+- Advantage/Disadvantage: two d20s, the higher or lower counts; several sources don't stack, Advantage + Disadvantage cancel out
+- Tap-to-toggle active effects that are applied to attack rolls, ability checks and saving throws automatically – with their source in the result:
+  Bless, Bane (−1d4), Guidance, Poisoned, Frightened, Blinded, Prone, Restrained, Grappled, Invisible,
+  Paralyzed/Stunned/Unconscious (Strength/Dexterity saves fail), Exhaustion (−2 per level), Helped (used up),
+  Half Cover / Three-Quarters Cover
+- Saved rolls (e.g. "Longsword: 1d8 + 3") via a "+" tile; the modifier field is added on top when rolling
+- Natural 20 / natural 1 highlighting (attacks and free rolls)
+- **Player mode / character sheet:** level, ability scores, saving throw proficiencies, 18 skills with proficiency/expertise,
+  spellcasting ability, AC and attacks. Computes proficiency bonus, spell save DC, spell attack and passive Perception.
+  One tap rolls ability checks, saving throws, skills, initiative, concentration, death saves (with outcome)
+  and attack/damage per weapon – active effects and the situational modifier apply automatically.
+  Multiple characters.
+- **Spell list** from the SRD 5.2 (via dnd5eapi.co): search, add, and every card shows e.g.
+  "DEX saving throw vs. DC 15 · Success: half damage". Spell attack, damage and healing in one tap, including upcasting
+  and cantrip scaling by character level. Added spells are stored in the character and work offline.
+- **DM mode:** search SRD 5.2 monsters and add them to an encounter (duplicates are numbered, XP is summed).
+  Every monster card shows AC, HP (damage/heal and "Roll HP"), actions, bonus actions, reactions, legendary actions
+  and spellcasting. One tap rolls attacks, damage (all damage types, with crits), recharge (with outcome), initiative,
+  ability checks, saving throws and skills. DC abilities like breath weapons show the save, DC and "half damage".
+  Conditions and effects are tracked per monster.
+- **Prepared encounters** (DM): save encounters with a name and monster counts – build them from scratch or take over the
+  running encounter. At the table, "Start" loads one (replacing the current encounter) and "+ Add" appends it as
+  reinforcements. Statblocks stay on the device, so this works offline.
+- **Initiative tracker** (DM): add players by name (kept across encounters), enter the initiative they call out, roll for
+  monsters in one tap (d20 + DEX, their conditions apply) or set values by hand. Sorted automatically; "Next" shows whose
+  turn it is, counts rounds and skips defeated monsters. The active monster card is highlighted.
+- History of the last 100 rolls (in memory only), shown via the clock icon in the result card
+- JSON import/export
+- Fair randomness via `crypto.getRandomValues` with rejection sampling
+- Installable as a PWA (Android & iOS "Add to Home Screen"), works offline
 
-## Entwicklung
+## Development
 
 Vite + Svelte 5 + TypeScript.
 
 ```bash
 npm install
-npm run dev      # Dev-Server
-npm test         # Unit-Tests (Vitest)
-npm run check    # Typecheck
-npm run build    # Production-Build nach dist/
+npm run dev      # dev server
+npm test         # unit tests (Vitest)
+npm run check    # type check
+npm run build    # production build into dist/
 ```
 
-Struktur:
+Structure:
 
-- `src/core/` – Würfel-, Effekt- und Session-Logik, framework-unabhängig und getestet (`effects.ts` = Regelkatalog)
-- `src/platform/` – Plattform-Grenze (Datei-Export/-Import, lokaler Speicher); hier kommt später die native Variante hin
-- `src/App.svelte`, `src/components/`, `src/lib/` – Oberfläche
-- `public/icon.svg` – Quelle für alle App-Icons (`npm run icons` erzeugt die PNGs neu)
+- `src/core/` – dice, effects, character, monster and session logic; framework-free and tested (`effects.ts` = rules catalog)
+- `src/platform/` – platform boundary (file export/import, local storage, SRD API); a native variant can replace it later
+- `src/App.svelte`, `src/components/`, `src/lib/` – UI
+- `public/icon.svg` – source for all app icons (`npm run icons` regenerates the PNGs)
 
 ## Deployment
 
-Jeder Push auf `main` baut und veröffentlicht die Seite per GitHub Action (`.github/workflows/deploy.yml`) auf GitHub Pages. In den Repo-Einstellungen muss unter **Settings → Pages** als Quelle „GitHub Actions“ gesetzt sein.
+Every push to `main` builds and publishes the site to GitHub Pages via GitHub Actions (`.github/workflows/deploy.yml`). In the repository settings, **Settings → Pages** must use "GitHub Actions" as the source.
 
-## Installation als App
+## Install as an app
 
-- **iOS:** Seite in Safari öffnen → Teilen → „Zum Home-Bildschirm“
-- **Android:** Seite in Chrome öffnen → Menü → „App installieren“
+- **iOS:** open the site in Safari → Share → "Add to Home Screen"
+- **Android:** open the site in Chrome → menu → "Install app"
 
 ## Roadmap
 
-- Erweitertes Highlighting im Kampf (z. B. Reaktionen/legendäre Aktionen am Rundenende)
-- Spieler-Charaktere (RK, TP) im Kampf, Treffer/Verfehlt gegen RK für den Spielleiter
-- Dauer von Zuständen/Effekten in Runden, Konzentrations-Erinnerung bei Schaden
-- Optional: Android-APK über Capacitor als GitHub Release
+- Share characters with the DM (export a single character, import it into the DM's party: AC, passive Perception, saves)
+- Hit/miss against AC for the DM
+- Richer combat highlighting (e.g. reactions/legendary actions at the end of a round)
+- Durations of conditions/effects in rounds, concentration reminder on damage
+- Layout for larger screens
+- More languages
+- Optional: Android APK via Capacitor as a GitHub release
 
-## Lizenz der Spielinhalte
+## Game content license
 
-Dieses Werk enthält Material aus dem System Reference Document 5.2 („SRD 5.2“) von Wizards of the Coast LLC,
-verfügbar unter <https://www.dndbeyond.com/srd>. Das SRD 5.2 steht unter der Creative Commons Attribution 4.0
-International License (<https://creativecommons.org/licenses/by/4.0/legalcode>). Daten über <https://www.dnd5eapi.co>.
-Dicefree ist kein offizielles Produkt von Wizards of the Coast.
-
+This work includes material from the System Reference Document 5.2 ("SRD 5.2") by Wizards of the Coast LLC,
+available at <https://www.dndbeyond.com/srd>. The SRD 5.2 is licensed under the Creative Commons Attribution 4.0
+International License (<https://creativecommons.org/licenses/by/4.0/legalcode>). Data via <https://www.dnd5eapi.co>.
+Dicefree is not an official Wizards of the Coast product.

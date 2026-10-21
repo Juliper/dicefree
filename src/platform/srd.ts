@@ -10,7 +10,7 @@ const INDEX_MAX_AGE = 1000 * 60 * 60 * 24 * 30; // 30 days
 
 async function getJson(path: string): Promise<unknown> {
   const res = await fetch(`${BASE}${path}`, { headers: { Accept: "application/json" } });
-  if (!res.ok) throw new Error(`SRD-API antwortet mit ${res.status}`);
+  if (!res.ok) throw new Error(`SRD API responded with ${res.status}`);
   return res.json();
 }
 
@@ -25,7 +25,7 @@ function readCached<T>(key: string): { at: number; items: T[] } | null {
 
 function results(raw: unknown): any[] {
   const list = (raw as { results?: unknown[] } | null)?.results;
-  if (!Array.isArray(list)) throw new Error("Unerwartete Antwort der SRD-API");
+  if (!Array.isArray(list)) throw new Error("Unexpected response from the SRD API");
   return list;
 }
 
@@ -65,12 +65,12 @@ export const loadMonsterIndex = () =>
 
 export async function loadMonster(index: string): Promise<Monster> {
   const m = parseMonster(await getJson(`/api/2024/monsters/${encodeURIComponent(index)}`));
-  if (!m) throw new Error("Monster konnte nicht gelesen werden");
+  if (!m) throw new Error("Could not read the monster");
   return m;
 }
 
 export async function loadSpell(index: string): Promise<Spell> {
   const spell = parseSpell(await getJson(`/api/2024/spells/${encodeURIComponent(index)}`));
-  if (!spell) throw new Error("Zauber konnte nicht gelesen werden");
+  if (!spell) throw new Error("Could not read the spell");
   return spell;
 }

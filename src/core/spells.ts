@@ -51,21 +51,6 @@ const ABILITY_WORD: Record<string, Ability> = {
   charisma: "cha",
 };
 
-export const DAMAGE_TYPE_DE: Record<string, string> = {
-  acid: "Säure",
-  bludgeoning: "Wucht",
-  cold: "Kälte",
-  fire: "Feuer",
-  force: "Energie",
-  lightning: "Blitz",
-  necrotic: "Nekrotisch",
-  piercing: "Stich",
-  poison: "Gift",
-  psychic: "Psychisch",
-  radiant: "Gleißend",
-  slashing: "Hieb",
-  thunder: "Schall",
-};
 
 /** All "NdM" groups in a string, e.g. "1d10 + 1d6" or "8d6". */
 export function diceIn(text: string): DiceGroup[] {
@@ -169,10 +154,11 @@ export function amountAt(a: SpellAmount, spellLevel: number, slot: number, chara
   return normalizePool([...a.base, ...a.perSlot.map((g) => ({ die: g.die, count: g.count * above }))]);
 }
 
-export const levelLabel = (level: number) => (level === 0 ? "Zaubertrick" : `Grad ${level}`);
+export const levelLabel = (level: number) => (level === 0 ? "Cantrip" : `Level ${level}`);
 
+/** "fire" → "Fire" (the API gives lower-case indexes). */
 export function damageTypeLabel(type: string): string {
-  return DAMAGE_TYPE_DE[type] ?? type;
+  return type ? type.charAt(0).toUpperCase() + type.slice(1) : type;
 }
 
 // --- Tolerant parsing for spells stored inside characters ---

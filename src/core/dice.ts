@@ -66,7 +66,7 @@ export interface RollRequest {
   flats?: Flat[];
   /** Critical hit: every damage die is rolled twice (2024: modifiers are not doubled). */
   crit?: boolean;
-  /** Explanations shown with the result, e.g. "Vorteil (Unsichtbar)". */
+  /** Explanations shown with the result, e.g. "Advantage from Invisible". */
   notes?: string[];
   /** The roll fails regardless of the dice (e.g. Paralyzed vs. a Dex save). */
   autoFail?: boolean;

@@ -65,7 +65,7 @@
   }
 
   async function remove() {
-    if (editing && (await ask(`Kampf „${editing.name}“ löschen?`, { confirmLabel: "Löschen", danger: true }))) {
+    if (editing && (await ask(`Delete encounter “${editing.name}”?`, { confirmLabel: "Delete", danger: true }))) {
       ondelete(editing.id);
       dialog.close();
     }
@@ -74,42 +74,42 @@
 
 <dialog bind:this={dialog} class="preset-dialog spell-search" aria-labelledby="encounter-editor-title">
   <form class="spell-search-body" onsubmit={save}>
-    <h2 id="encounter-editor-title">{editing ? "Kampf bearbeiten" : "Kampf vorbereiten"}</h2>
+    <h2 id="encounter-editor-title">{editing ? "Edit encounter" : "Prepare encounter"}</h2>
 
     <label class="field">
       <span>Name</span>
-      <input type="text" bind:value={name} maxlength={PRESET_NAME_MAX} placeholder="z. B. Goblin-Hinterhalt" autocomplete="off" />
+      <input type="text" bind:value={name} maxlength={PRESET_NAME_MAX} placeholder="e.g. Goblin Ambush" autocomplete="off" />
     </label>
 
     <div class="field">
-      <span>Monster{#if total} <small>· {total} Stück · {xp.toLocaleString("de-DE")} EP</small>{/if}</span>
+      <span>Monsters{#if total} <small>· {total} total · {xp.toLocaleString("en-US")} XP</small>{/if}</span>
       {#if rows.length}
         <ul class="encounter-rows">
           {#each rows as r (r.index)}
             {@const m = statblock(r.index)}
             <li>
-              <span class="encounter-row-name">{m?.name ?? r.index} <small>HG {m ? crLabel(m.cr) : "?"}</small></span>
+              <span class="encounter-row-name">{m?.name ?? r.index} <small>CR {m ? crLabel(m.cr) : "?"}</small></span>
               <span class="chip">
-                <button type="button" aria-label="Einen {m?.name} weniger" onclick={() => change(r.index, -1)}>−</button>
+                <button type="button" aria-label="One {m?.name} less" onclick={() => change(r.index, -1)}>−</button>
                 <span>{r.count}×</span>
-                <button type="button" aria-label="Einen {m?.name} mehr" onclick={() => change(r.index, 1)}>+</button>
+                <button type="button" aria-label="One {m?.name} more" onclick={() => change(r.index, 1)}>+</button>
               </span>
             </li>
           {/each}
         </ul>
       {:else}
-        <p class="hint">Noch keine Monster.</p>
+        <p class="hint">No monsters yet.</p>
       {/if}
-      <button type="button" class="ghost" onclick={() => search.open()}>+ Monster suchen</button>
+      <button type="button" class="ghost" onclick={() => search.open()}>+ Search monsters</button>
     </div>
 
     <div class="dialog-actions">
       {#if editing}
-        <button type="button" class="ghost danger" onclick={remove}>Löschen</button>
+        <button type="button" class="ghost danger" onclick={remove}>Delete</button>
       {/if}
       <span class="spacer"></span>
-      <button type="button" class="ghost" onclick={() => dialog.close()}>Abbrechen</button>
-      <button type="submit" class="primary" disabled={!canSave}>Speichern</button>
+      <button type="button" class="ghost" onclick={() => dialog.close()}>Cancel</button>
+      <button type="submit" class="primary" disabled={!canSave}>Save</button>
     </div>
   </form>
 </dialog>

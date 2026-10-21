@@ -39,7 +39,7 @@
   <header>
     <h3>{spell.name}</h3>
     <span class="spell-tags">
-      {#if spell.concentration}<span class="tag" title="Konzentration">K</span>{/if}
+      {#if spell.concentration}<span class="tag" title="Concentration">C</span>{/if}
       {#if spell.ritual}<span class="tag" title="Ritual">R</span>{/if}
     </span>
   </header>
@@ -51,9 +51,9 @@
 
   {#if spell.save}
     <p class="spell-save">
-      <b>{ABILITY_LABEL[spell.save.ability]}-Rettungswurf</b>
-      {#if dc !== null}gegen <b>SG {dc}</b>{:else}<small>(Zauberattribut im Bogen setzen für den SG)</small>{/if}
-      {#if spell.save.onSuccess === "half"}<span class="spell-success">· Erfolg: halber Schaden</span>{/if}
+      <b>{ABILITY_LABEL[spell.save.ability]} saving throw</b>
+      {#if dc !== null}vs. <b>DC {dc}</b>{:else}<small>(set a spellcasting ability for the DC)</small>{/if}
+      {#if spell.save.onSuccess === "half"}<span class="spell-success">· Success: half damage</span>{/if}
     </p>
   {/if}
 
@@ -65,18 +65,18 @@
     {/if}
     {#if spell.damage}
       <button type="button" onclick={() => { const r = spellDamageRoll(c, spell, castSlot); if (r) onroll(r); }}
-        >Schaden <b>{formatDice(damageDice)}</b>{spell.damage.type ? ` ${damageTypeLabel(spell.damage.type)}` : ""}</button
+        >Damage <b>{formatDice(damageDice)}</b>{spell.damage.type ? ` ${damageTypeLabel(spell.damage.type)}` : ""}</button
       >
     {/if}
     {#if spell.heal}
       <button type="button" onclick={() => { const r = spellHealRoll(c, spell, castSlot); if (r) onroll(r); }}
-        >Heilung <b>{formatDice(healDice)}{healMod ? ` ${healMod > 0 ? "+" : "−"} ${Math.abs(healMod)}` : ""}</b></button
+        >Healing <b>{formatDice(healDice)}{healMod ? ` ${healMod > 0 ? "+" : "−"} ${Math.abs(healMod)}` : ""}</b></button
       >
     {/if}
     {#if scalable}
       <label class="slot-select">
-        <span>Grad</span>
-        <select bind:value={slot} aria-label="Zaubergrad für {spell.name}">
+        <span>Level</span>
+        <select bind:value={slot} aria-label="Spell slot level for {spell.name}">
           {#each Array.from({ length: 10 - spell.level }, (_, i) => spell.level + i) as l (l)}<option value={l}>{l}</option>{/each}
         </select>
       </label>
@@ -84,9 +84,9 @@
   </div>
 
   <details>
-    <summary>Beschreibung</summary>
+    <summary>Description</summary>
     <p class="spell-desc">{spell.description}</p>
     {#if spell.duration}<p class="hint">Dauer: {spell.duration}</p>{/if}
-    <button type="button" class="ghost small danger" onclick={() => onremove(spell.index)}>Aus Zauberliste entfernen</button>
+    <button type="button" class="ghost small danger" onclick={() => onremove(spell.index)}>Remove from spell list</button>
   </details>
 </article>

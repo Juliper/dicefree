@@ -15,7 +15,7 @@
     type RollRequest,
     type RollResult,
   } from "./core/dice";
-  import { ABILITY_LABEL, EFFECTS, applyEffects, buildRoll, effectLabel, toggleEffect, type EffectGroup } from "./core/effects";
+  import { EFFECTS, applyEffects, buildRoll, effectLabel, toggleEffect, type EffectGroup } from "./core/effects";
   import {
     LIMITS,
     HISTORY_MAX,
@@ -41,7 +41,7 @@
   } from "./core/session";
   import { saveJson, readJson } from "./platform/files";
   import { loadLocal, saveLocal } from "./platform/storage";
-  import { KIND_LABEL, KIND_TAB, describeRoll } from "./lib/labels";
+  import { KIND_LABEL, KIND_TAB, describeRoll, testName } from "./lib/labels";
   import PresetDialog from "./components/PresetDialog.svelte";
   import ConfirmHost from "./components/ConfirmHost.svelte";
   import { ask, notify } from "./lib/dialogs.svelte";
@@ -65,14 +65,14 @@
 
   const MODES: { value: RollMode; label: string }[] = [
     { value: "normal", label: "Normal" },
-    { value: "advantage", label: "Vorteil" },
-    { value: "disadvantage", label: "Nachteil" },
+    { value: "advantage", label: "Advantage" },
+    { value: "disadvantage", label: "Disadvantage" },
   ];
-  const MODE_LABEL = { advantage: "Vorteil", disadvantage: "Nachteil" } as const;
+  const MODE_LABEL = { advantage: "Advantage", disadvantage: "Disadvantage" } as const;
   const EFFECT_GROUPS: { id: EffectGroup; label: string }[] = [
-    { id: "spell", label: "Zauber" },
-    { id: "condition", label: "Zustände" },
-    { id: "situation", label: "Situation" },
+    { id: "spell", label: "Spells" },
+    { id: "condition", label: "Conditions" },
+    { id: "situation", label: "Situations" },
   ];
 
   // The dice tab only offers roll kinds that don't need character data; checks and saves
@@ -87,7 +87,7 @@
   let session = $state(restored);
   let current = $state<RollResult | null>(null);
   let rollId = $state(0); // bumps on every roll to replay the pop animation
-  let modText = $state(String(restored.modifier)); // raw text of the Bonus/Malus field while typing
+  let modText = $state(String(restored.modifier)); // raw text of the modifier field while typing
   let presetDialog: PresetDialog;
   let editingCharacter = $state(false);
   let monsterSearch: MonsterSearch;
@@ -121,7 +121,7 @@
     d20Test ? applyEffects({ kind: session.kind, ability: session.ability }, session.effects, session.mode) : null,
   );
   const rollLabel = $derived(
-    canRoll ? describeRoll(session.kind, session.ability, session.pool, session.modifier) : "Würfel antippen",
+    canRoll ? describeRoll(session.kind, session.ability, session.pool, session.modifier) : "Tap a die",
   );
   const countOf = (die: Die) => session.pool.find((g) => g.die === die)?.count ?? 0;
   const effectRelevant = (id: string) =>
@@ -187,7 +187,7 @@
   }
 
   async function clearCurrentEncounter() {
-    if (!(await ask("Alle Monster aus dem Kampf entfernen? Die Spieler bleiben.", { confirmLabel: "Leeren", danger: true }))) return;
+    if (!(await ask("Remove all monsters from the encounter? Players stay.", { confirmLabel: "Clear", danger: true }))) return;
     Object.assign(session, clearEncounter(session), { tracker: emptyTracker() });
   }
 
@@ -203,7 +203,7 @@
 
   /** Replaces the current fight; initiative starts over (players keep their place in the party). */
   async function startEncounter(saved: SavedEncounter) {
-    if (session.encounter.length && !(await ask(`Aktuellen Kampf durch „${saved.name}“ ersetzen?`, { confirmLabel: "Ersetzen" })))
+    if (session.encounter.length && !(await ask(`Replace the current encounter with “${saved.name}”?`, { confirmLabel: "Replace" })))
       return;
     Object.assign(session, loadSavedEncounter(session, saved, "replace"), { tracker: emptyTracker() });
   }
@@ -244,7 +244,7 @@
   }
 
   async function endCombat() {
-    if (await ask("Kampf beenden? Initiative-Werte und Runden werden zurückgesetzt, Monster und Spieler bleiben.", { confirmLabel: "Beenden" })) {
+    if (await ask("End combat? Initiative values and rounds are reset; monsters and players stay.", { confirmLabel: "End" })) {
       session.tracker = emptyTracker();
     }
   }
@@ -279,7 +279,7 @@
     });
   }
 
-  /** Saved rolls bring their own bonus; the Bonus/Malus field is added on top. */
+  /** Saved rolls bring their own bonus; the modifier field is added on top. */
   function rollPreset(p: Preset) {
     doRoll({
       kind: p.kind,
@@ -291,7 +291,7 @@
     });
   }
 
-  /** Sheet rolls use the sheet's numbers; the Bonus/Malus field still adds situational modifiers. */
+  /** Sheet rolls use the sheet's numbers; the modifier field still adds situational modifiers. */
   function rollFromSheet(r: SheetRoll) {
     const who = activeCharacter ? `${activeCharacter.name}: ` : "";
     doRoll({
@@ -370,7 +370,7 @@
       modText = String(session.modifier);
       show(session.history[0] ?? null);
     } catch (err) {
-      await notify(`Import fehlgeschlagen: ${(err as Error).message}`);
+      await notify(`Import failed: ${(err as Error).message}`);
     }
   }
 
@@ -397,19 +397,20 @@
 
 {#snippet title(r: RollResult)}
   {#if r.label && (r.kind === "check" || r.kind === "save")}<strong>{r.label}</strong>
-    {formatModifier(r.modifier)}{:else}{#if r.label}<strong>{r.label}</strong>{" · "}{/if}{#if r.kind && r.kind !== "damage"}{r.ability
-        ? `${ABILITY_LABEL[r.ability]}-`
-        : ""}{KIND_LABEL[r.kind]} {formatModifier(r.modifier)}{:else}{expression(r)}{/if}{/if}{#if r.mode}
+    {formatModifier(r.modifier)}{:else}{#if r.label}<strong>{r.label}</strong>{" · "}{/if}{#if r.kind && r.kind !== "damage"}{testName(
+        r.kind,
+        r.ability,
+      )} {formatModifier(r.modifier)}{:else}{expression(r)}{/if}{/if}{#if r.mode}
     <span class="mode-tag {r.mode}">{MODE_LABEL[r.mode]}</span>{/if}{#if r.crit}
-    <span class="mode-tag advantage">Kritisch</span>{/if}
+    <span class="mode-tag advantage">Critical</span>{/if}
 {/snippet}
 
 {#snippet situational()}
-  <section class="pool card" aria-label="Situativ">
+  <section class="pool card" aria-label="Situational">
         <div class="modifier">
-          <label for="sheet-modifier">Situativer Bonus / Malus</label>
+          <label for="sheet-modifier">Situational modifier</label>
           <div class="modifier-input">
-            <button type="button" aria-label="Malus erhöhen" onclick={() => setModifier(session.modifier - 1)}>−</button>
+            <button type="button" aria-label="Decrease modifier" onclick={() => setModifier(session.modifier - 1)}>−</button>
             <input
               id="sheet-modifier"
               type="text"
@@ -420,10 +421,10 @@
               onblur={() => setModifier(session.modifier)}
               onfocus={(e) => e.currentTarget.select()}
             />
-            <button type="button" aria-label="Bonus erhöhen" onclick={() => setModifier(session.modifier + 1)}>+</button>
+            <button type="button" aria-label="Increase modifier" onclick={() => setModifier(session.modifier + 1)}>+</button>
           </div>
         </div>
-        <div class="mode" role="radiogroup" aria-label="Vorteil oder Nachteil">
+        <div class="mode" role="radiogroup" aria-label="Advantage or disadvantage">
           {#each MODES as m (m.value)}
             <button
               type="button"
@@ -437,7 +438,7 @@
         </div>
         <label class="switch">
           <input type="checkbox" bind:checked={session.crit} />
-          <span>Nächster Schaden ist ein kritischer Treffer</span>
+          <span>Next damage roll is a critical hit</span>
         </label>
       </section>
 {/snippet}
@@ -463,7 +464,7 @@
     <button
       type="button"
       class="history-toggle"
-      aria-label="Verlauf anzeigen{session.history.length ? ` (${session.history.length} Würfe)` : ''}"
+      aria-label="Show history{session.history.length ? ` (${session.history.length} rolls)` : ''}"
       onclick={() => historyDialog.showModal()}
     >
       <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -472,7 +473,7 @@
       {#if session.history.length}<span class="history-count">{session.history.length}</span>{/if}
     </button>
     <div class="result-label">
-      {#if current}{@render title(current)}{:else}Stell dir einen Wurf zusammen{/if}
+      {#if current}{@render title(current)}{:else}Build a roll{/if}
     </div>
     {#key rollId}
       <div class="result-total" class:pop={current}>{current?.total ?? "–"}</div>
@@ -480,33 +481,33 @@
     {#if current}
       <div class="result-detail">
         {@render rolls(current)}
-        {#if nat === "crit"}<div class="nat">Natürliche 20!</div>{/if}
-        {#if nat === "fumble"}<div class="nat">Natürliche 1</div>{/if}
+        {#if nat === "crit"}<div class="nat">Natural 20!</div>{/if}
+        {#if nat === "fumble"}<div class="nat">Natural 1</div>{/if}
         {#each current.notes ?? [] as n}<div class="note">{n}</div>{/each}
       </div>
     {/if}
   </section>
 
-  <nav class="views" aria-label="Ansicht">
+  <nav class="views" aria-label="View">
     <button type="button" class:selected={session.view === "dice"} aria-current={session.view === "dice"} onclick={() => (session.view = "dice")}
-      >Würfel</button
+      >Dice</button
     >
     <button
       type="button"
       class:selected={session.view === "character"}
       aria-current={session.view === "character"}
-      onclick={() => (session.view = "character")}>Charakter</button
+      onclick={() => (session.view = "character")}>Character</button
     >
     <button type="button" class:selected={session.view === "dm"} aria-current={session.view === "dm"} onclick={() => (session.view = "dm")}
-      >Spielleiter</button
+      >DM</button
     >
   </nav>
 
   {#if session.view === "character"}
-    <section class="character-bar" aria-label="Charakter wählen">
+    <section class="character-bar" aria-label="Choose character">
       {#if session.characters.length > 1 && !editingCharacter}
         <select
-          aria-label="Aktiver Charakter"
+          aria-label="Active character"
           value={activeCharacter?.id}
           onchange={(e) => (session.activeCharacterId = e.currentTarget.value)}
         >
@@ -518,18 +519,18 @@
       {#if !editingCharacter}
         <span class="spacer"></span>
         {#if activeCharacter}
-          <button type="button" class="ghost small" onclick={() => (editingCharacter = true)}>Bearbeiten</button>
+          <button type="button" class="ghost small" onclick={() => (editingCharacter = true)}>Edit</button>
         {/if}
         {#if session.characters.length < CHARACTERS_MAX}
-          <button type="button" class="ghost small" onclick={createCharacter}>+ Neu</button>
+          <button type="button" class="ghost small" onclick={createCharacter}>+ New</button>
         {/if}
       {/if}
     </section>
 
     {#if !activeCharacter}
       <section class="card empty">
-        <p>Trag deine Werte ein – dann würfelst du Fertigkeiten, Rettungswürfe und Angriffe mit einem Tipp, und die App zeigt dir deinen Zauber-SG.</p>
-        <button type="button" class="primary" onclick={createCharacter}>Charakter anlegen</button>
+        <p>Enter your stats – then skills, saving throws and attacks are one tap away, and the app shows your spell save DC.</p>
+        <button type="button" class="primary" onclick={createCharacter}>Create character</button>
       </section>
     {:else if editingCharacter}
       {#key activeCharacter.id}
@@ -545,32 +546,32 @@
       {@render situational()}
     {/if}
   {:else if session.view === "dm"}
-    <section class="character-bar" aria-label="Kampf">
+    <section class="character-bar" aria-label="Encounter">
       <div class="bar-title">
-        <h2 class="character-name">Kampf</h2>
+        <h2 class="character-name">Encounter</h2>
         {#if session.encounter.length}
-          <small>{session.encounter.length} Monster · {encounterXp.toLocaleString("de-DE")} EP</small>
+          <small>{session.encounter.length} {session.encounter.length === 1 ? "monster" : "monsters"} · {encounterXp.toLocaleString("en-US")} XP</small>
         {/if}
       </div>
       <span class="spacer"></span>
       {#if session.encounter.length}
-        <button type="button" class="ghost small" onclick={clearCurrentEncounter}>Leeren</button>
+        <button type="button" class="ghost small" onclick={clearCurrentEncounter}>Clear</button>
       {/if}
       {#if session.encounter.length < ENCOUNTER_MAX}
         <button type="button" class="ghost small" onclick={() => monsterSearch.open()}>+ Monster</button>
       {/if}
     </section>
 
-    <section class="saved-encounters" aria-label="Vorbereitete Kämpfe">
+    <section class="saved-encounters" aria-label="Prepared encounters">
       <div class="section-head">
-        <h2>Vorbereitete Kämpfe</h2>
+        <h2>Prepared Encounters</h2>
         <span class="spacer"></span>
         {#if session.encounter.length}
           <button type="button" class="ghost small" onclick={() => encounterEditor.openNew(countsOf(session.encounter))}
-            >Aktuellen speichern</button
+            >Save current</button
           >
         {/if}
-        <button type="button" class="ghost small" onclick={() => encounterEditor.openNew()}>+ Neu</button>
+        <button type="button" class="ghost small" onclick={() => encounterEditor.openNew()}>+ New</button>
       </div>
       {#if session.savedEncounters.length}
         <ul class="saved-list">
@@ -578,20 +579,20 @@
             <li class="saved-card">
               <div class="saved-info">
                 <b>{saved.name}</b>
-                <small>{savedSummary(saved)} · {savedXp(saved).toLocaleString("de-DE")} EP</small>
+                <small>{savedSummary(saved)} · {savedXp(saved).toLocaleString("en-US")} XP</small>
               </div>
               <div class="saved-buttons">
-                <button type="button" class="primary" onclick={() => startEncounter(saved)}>Starten</button>
-                <button type="button" class="ghost" onclick={() => appendEncounter(saved)} aria-label="{saved.name} zum laufenden Kampf hinzufügen"
-                  >+ Dazu</button
+                <button type="button" class="primary" onclick={() => startEncounter(saved)}>Start</button>
+                <button type="button" class="ghost" onclick={() => appendEncounter(saved)} aria-label="Add {saved.name} to the running encounter"
+                  >+ Add</button
                 >
-                <button type="button" class="ghost" aria-label="{saved.name} bearbeiten" onclick={() => encounterEditor.openEdit(saved)}>⋯</button>
+                <button type="button" class="ghost" aria-label="Edit {saved.name}" onclick={() => encounterEditor.openEdit(saved)}>⋯</button>
               </div>
             </li>
           {/each}
         </ul>
       {:else}
-        <p class="hint">Bereite Kämpfe vor, dann startest du sie am Tisch mit einem Tipp – auch offline.</p>
+        <p class="hint">Prepare encounters at home, then start them at the table with one tap – even offline.</p>
       {/if}
     </section>
 
@@ -626,12 +627,12 @@
       {/each}
     {:else}
       <section class="card empty">
-        <p>Stell dir einen Kampf zusammen: Monster aus dem SRD 5.2 suchen, mit einem Tipp Angriffe, Schaden, Rettungswürfe und Aufladungen würfeln, TP und Zustände pro Monster verfolgen.</p>
-        <button type="button" class="primary" onclick={() => monsterSearch.open()}>Monster hinzufügen</button>
+        <p>Build an encounter: search SRD 5.2 monsters, roll attacks, damage, saves and recharges with one tap, and track HP and conditions per monster.</p>
+        <button type="button" class="primary" onclick={() => monsterSearch.open()}>Add monsters</button>
       </section>
     {/if}
   {:else}
-  <div class="kinds" role="tablist" aria-label="Wurfart">
+  <div class="kinds" role="tablist" aria-label="Roll type">
     {#each DICE_VIEW_KINDS as k (k)}
       <button type="button" role="tab" aria-selected={session.kind === k} class:selected={session.kind === k} onclick={() => setKind(k)}
         >{KIND_TAB[k]}</button
@@ -640,9 +641,9 @@
   </div>
 
   {#if d20Test}
-    <p class="hint d20-hint">{KIND_LABEL[session.kind]}: 1d20 + Bonus/Malus – aktive Effekte wirken mit.</p>
+    <p class="hint d20-hint">{KIND_LABEL[session.kind]}: 1d20 + modifier – active effects apply.</p>
   {:else}
-    <section class="dice" aria-label="Würfel – rechts tippen fügt hinzu, links entfernt">
+    <section class="dice" aria-label="Dice – tap the right half to add, the left half to remove">
       {#each DICE as die (die)}
         {@const n = countOf(die)}
         <div class="die" class:active={n > 0}>
@@ -651,14 +652,14 @@
           <button
             type="button"
             class="half minus"
-            aria-label="Einen d{die} entfernen ({n} im Pool)"
+            aria-label="Remove a d{die} ({n} in the pool)"
             disabled={!n}
             onclick={() => changeDie(die, -1)}><span>−</span></button
           >
           <button
             type="button"
             class="half plus"
-            aria-label="Einen d{die} hinzufügen ({n} im Pool)"
+            aria-label="Add a d{die} ({n} in the pool)"
             onclick={() => changeDie(die, 1)}><span>+</span></button
           >
         </div>
@@ -666,11 +667,11 @@
     </section>
   {/if}
 
-  <section class="pool card" aria-label="Wurf">
+  <section class="pool card" aria-label="Roll">
     <div class="modifier">
-      <label for="modifier-input">Bonus / Malus</label>
+      <label for="modifier-input">Modifier</label>
       <div class="modifier-input">
-        <button type="button" aria-label="Malus erhöhen" onclick={() => setModifier(session.modifier - 1)}>−</button>
+        <button type="button" aria-label="Decrease modifier" onclick={() => setModifier(session.modifier - 1)}>−</button>
         <input
           id="modifier-input"
           type="text"
@@ -681,13 +682,13 @@
           onblur={() => setModifier(session.modifier)}
           onfocus={(e) => e.currentTarget.select()}
         />
-        <button type="button" aria-label="Bonus erhöhen" onclick={() => setModifier(session.modifier + 1)}>+</button>
+        <button type="button" aria-label="Increase modifier" onclick={() => setModifier(session.modifier + 1)}>+</button>
         <button type="button" class="sign" aria-label="Vorzeichen wechseln" onclick={() => setModifier(-session.modifier)}>±</button>
       </div>
     </div>
 
     {#if showMode}
-      <div class="mode" role="radiogroup" aria-label="Vorteil oder Nachteil">
+      <div class="mode" role="radiogroup" aria-label="Advantage or disadvantage">
         {#each MODES as m (m.value)}
           <button
             type="button"
@@ -700,19 +701,19 @@
         {/each}
       </div>
       {#if session.kind === "free" && session.mode !== "normal" && canRoll && !modeApplies(session.pool)}
-        <p class="hint mode-hint">{MODE_LABEL[session.mode]} wirkt nur, wenn genau ein d20 im Wurf ist.</p>
+        <p class="hint mode-hint">{MODE_LABEL[session.mode]} only applies when the roll has exactly one d20.</p>
       {/if}
     {/if}
 
     {#if session.kind === "damage"}
       <label class="switch">
         <input type="checkbox" bind:checked={session.crit} />
-        <span>Kritischer Treffer – alle Schadenswürfel doppelt</span>
+        <span>Critical hit – roll all damage dice twice</span>
       </label>
     {/if}
 
     {#if preview && (preview.bonusDice.length || preview.flats.length || preview.notes.length)}
-      <ul class="preview" aria-label="Wirkt auf diesen Wurf">
+      <ul class="preview" aria-label="Applies to this roll">
         {#each preview.bonusDice as b}<li>{b.source} {b.sign === -1 ? "−" : "+"}{b.count}d{b.die}</li>{/each}
         {#each preview.flats as f}<li>{f.source} {formatModifier(f.value)}</li>{/each}
         {#each preview.notes as n}<li>{n}</li>{/each}
@@ -721,10 +722,10 @@
 
     <div class="roll-row">
       {#if !d20Test}
-        <button type="button" class="ghost" disabled={!poolSize(session.pool)} onclick={() => (session.pool = [])}>Leeren</button>
+        <button type="button" class="ghost" disabled={!poolSize(session.pool)} onclick={() => (session.pool = [])}>Clear</button>
       {/if}
       <button type="button" class="roll" disabled={!canRoll} onclick={rollCurrent}>
-        {canRoll ? `Würfeln: ${rollLabel}` : rollLabel}
+        {canRoll ? `Roll: ${rollLabel}` : rollLabel}
       </button>
     </div>
   </section>
@@ -732,11 +733,11 @@
   {/if}
 
   {#if !(session.view === "character" && editingCharacter) && session.view !== "dm"}
-  <section class="effects" aria-label="Aktive Effekte">
+  <section class="effects" aria-label="Active effects">
     <div class="section-head">
-      <h2>Aktive Effekte</h2>
+      <h2>Active Effects</h2>
       {#if Object.keys(session.effects).length}
-        <button type="button" class="ghost small" onclick={() => (session.effects = {})}>Alle aus</button>
+        <button type="button" class="ghost small" onclick={() => (session.effects = {})}>All off</button>
       {/if}
     </div>
     {#each EFFECT_GROUPS as grp (grp.id)}
@@ -759,14 +760,14 @@
         </div>
       </div>
     {/each}
-    <p class="hint">Antippen schaltet an/aus{#if EFFECTS.some((e) => e.maxLevel)}, Erschöpfung zählt pro Tipp eine Stufe hoch{/if}. Effekte wirken auf Angriffs-, Attributs- und Rettungswürfe.</p>
+    <p class="hint">Tap to toggle{#if EFFECTS.some((e) => e.maxLevel)}; Exhaustion goes up one level per tap{/if}. Effects apply to attack rolls, ability checks and saving throws.</p>
   </section>
 
   {/if}
 
   {#if session.view === "dice"}
-  <section class="presets" aria-label="Gespeicherte Würfe">
-    <h2>Gespeicherte Würfe</h2>
+  <section class="presets" aria-label="Saved rolls">
+    <h2>Saved Rolls</h2>
     <div class="preset-grid">
       {#each session.presets as p (p.id)}
         <div class="preset">
@@ -780,9 +781,9 @@
         </div>
       {/each}
       {#if session.presets.length < PRESETS_MAX}
-        <button type="button" class="preset add" aria-label="Aktuellen Wurf speichern" onclick={() => presetDialog.openNew()}>
+        <button type="button" class="preset add" aria-label="Save the current roll" onclick={() => presetDialog.openNew()}>
           <span class="plus">+</span>
-          <span class="preset-expr">{canRoll ? describeRoll(session.kind, session.ability, session.pool, 0) : "Auswahl speichern"}</span>
+          <span class="preset-expr">{canRoll ? describeRoll(session.kind, session.ability, session.pool, 0) : "Save selection"}</span>
         </button>
       {/if}
     </div>
@@ -791,11 +792,11 @@
   {/if}
 
   <footer class="attribution">
-    Dieses Werk enthält Material aus dem System Reference Document 5.2 („SRD 5.2“) von Wizards of the Coast LLC,
-    verfügbar unter <a href="https://www.dndbeyond.com/srd" target="_blank" rel="noopener">dndbeyond.com/srd</a>.
-    Das SRD 5.2 steht unter der
-    <a href="https://creativecommons.org/licenses/by/4.0/legalcode" target="_blank" rel="noopener">Creative Commons Attribution 4.0</a>.
-    Daten über <a href="https://www.dnd5eapi.co" target="_blank" rel="noopener">dnd5eapi.co</a>. Kein offizielles Produkt von Wizards of the Coast.
+    This work includes material from the System Reference Document 5.2 (“SRD 5.2”) by Wizards of the Coast LLC,
+    available at <a href="https://www.dndbeyond.com/srd" target="_blank" rel="noopener">dndbeyond.com/srd</a>.
+    The SRD 5.2 is licensed under the
+    <a href="https://creativecommons.org/licenses/by/4.0/legalcode" target="_blank" rel="noopener">Creative Commons Attribution 4.0 International License</a>.
+    Data via <a href="https://www.dnd5eapi.co" target="_blank" rel="noopener">dnd5eapi.co</a>. Not an official Wizards of the Coast product.
   </footer>
 </main>
 
@@ -810,12 +811,12 @@
 >
   <div class="sheet-body">
     <div class="sheet-head">
-      <h2 id="history-title">Verlauf</h2>
+      <h2 id="history-title">History</h2>
       <span class="spacer"></span>
       {#if session.history.length}
-        <button type="button" class="ghost small" onclick={() => (session.history = [])}>Leeren</button>
+        <button type="button" class="ghost small" onclick={() => (session.history = [])}>Clear</button>
       {/if}
-      <button type="button" class="ghost small" aria-label="Verlauf schließen" onclick={() => historyDialog.close()}>✕</button>
+      <button type="button" class="ghost small" aria-label="Close history" onclick={() => historyDialog.close()}>✕</button>
     </div>
     {#if session.history.length}
       <ol class="history-list">
@@ -831,7 +832,7 @@
         {/each}
       </ol>
     {:else}
-      <p class="hint">Noch keine Würfe. Der Verlauf bleibt nur bis zum Neuladen; gespeicherte Würfe, Charaktere und Kämpfe bleiben auf diesem Gerät.</p>
+      <p class="hint">No rolls yet. The history only lasts until you reload; saved rolls, characters and encounters stay on this device.</p>
     {/if}
   </div>
 </dialog>

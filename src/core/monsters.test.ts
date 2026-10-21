@@ -110,7 +110,7 @@ describe("parseMonster", () => {
   it("reads attacks, DC abilities, recharge and spellcasting", () => {
     const rend = m.actions.find((a) => a.name === "Rend")!;
     expect(rend.attackBonus).toBe(14);
-    expect(damageText(rend.damage)).toBe("1d10 + 8 Hieb + 2d4 Feuer");
+    expect(damageText(rend.damage)).toBe("1d10 + 8 Slashing + 2d4 Fire");
     const breath = m.actions.find((a) => a.name === "Fire Breath")!;
     expect(breath.dc).toEqual({ ability: "dex", value: 21, success: "half" });
     expect(breath.recharge).toBe(5);
@@ -143,7 +143,7 @@ describe("monster rolls", () => {
     expect(r.total).toBe(5 + 8 + 2 + 3);
     expect(r.groups).toEqual([
       { die: 10, rolls: [5] },
-      { die: 4, rolls: [2, 3], source: "Feuer" },
+      { die: 4, rolls: [2, 3], source: "Fire" },
     ]);
   });
 
@@ -154,12 +154,12 @@ describe("monster rolls", () => {
   });
 
   it("notes the save for DC abilities", () => {
-    expect(monsterDamageRoll("Breath", breath)!.notes).toEqual(["GES-Rettungswurf SG 21 – bei Erfolg halber Schaden"]);
+    expect(monsterDamageRoll("Breath", breath)!.notes).toEqual(["DEX saving throw DC 21 – half damage on a success"]);
   });
 
   it("rolls recharge and hit points", () => {
-    expect(rechargeRoll("Breath", breath)).toMatchObject({ dice: [{ die: 6, count: 1 }], rechargeAt: 5, label: "Breath: Aufladung 5–6" });
-    expect([rechargeOutcome(4, 5), rechargeOutcome(5, 5), rechargeOutcome(6, 5)]).toEqual(["Nicht aufgeladen", "Aufgeladen!", "Aufgeladen!"]);
+    expect(rechargeRoll("Breath", breath)).toMatchObject({ dice: [{ die: 6, count: 1 }], rechargeAt: 5, label: "Breath: Recharge 5–6" });
+    expect([rechargeOutcome(4, 5), rechargeOutcome(5, 5), rechargeOutcome(6, 5)]).toEqual(["Not recharged", "Recharged!", "Recharged!"]);
     expect(hitPointsRoll(m)).toMatchObject({ dice: [{ die: 12, count: 19 }], modifier: 133 });
   });
 

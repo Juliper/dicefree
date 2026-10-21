@@ -141,8 +141,8 @@ describe("spell rolls from a character", () => {
   it("rolls damage with the save and DC in the notes", () => {
     const r = spellDamageRoll(c, parseSpell(fireball)!, 4)!;
     expect(r.dice).toEqual([{ die: 6, count: 9 }]);
-    expect(r.label).toBe("Fireball (Grad 4) (Feuer)");
-    expect(r.notes).toEqual(["Ziel: GES-Rettungswurf gegen SG 14 – bei Erfolg halber Schaden"]);
+    expect(r.label).toBe("Fireball (level 4) (Fire)");
+    expect(r.notes).toEqual(["Target: DEX saving throw vs. DC 14 – half damage on a success"]);
   });
 
   it("rolls healing plus the casting modifier", () => {

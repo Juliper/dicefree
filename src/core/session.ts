@@ -34,7 +34,7 @@ export const ROLL_KINDS: readonly RollKind[] = ["free", "attack", "check", "save
 const isKind = (k: unknown): k is RollKind => ROLL_KINDS.includes(k as RollKind);
 const isAbility = (a: unknown): a is Ability => ABILITIES.includes(a as Ability);
 
-/** A saved roll, e.g. "Langschwert: 1d8 + 3" or "Angriff Langschwert: Angriff +5". */
+/** A saved roll, e.g. "Longsword: 1d8 + 3" or "Longsword Attack: Attack +5". */
 export interface Preset {
   id: string;
   name: string;
@@ -383,7 +383,7 @@ export function fromFile(raw: unknown): Session {
     tracker?: unknown;
     history?: unknown;
   } | null;
-  if (data?.format !== FORMAT) throw new Error("Keine Dicefree-Datei.");
+  if (data?.format !== FORMAT) throw new Error("Not a Dicefree file.");
   const st = data.settings ?? {};
   const characters = parseList(data.characters, parseCharacter, CHARACTERS_MAX);
   const bestiary = parseList(data.bestiary, parseStoredMonster, BESTIARY_MAX);

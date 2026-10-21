@@ -280,12 +280,16 @@ main {
   gap: 3px;
 }
 .mode button {
+  min-width: 0;
   height: 36px;
+  padding: 0 2px;
   border: none;
   border-radius: 9px;
   background: transparent;
   color: var(--muted);
+  font-size: 0.85rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 .mode button.selected { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgb(0 0 0 / 0.15); }
 .mode button.advantage.selected { color: var(--crit); }
@@ -834,7 +838,7 @@ footer.attribution a { color: inherit; }
   background: var(--surface);
 }
 .combatant.down { opacity: 0.6; }
-.combatant.down h3::after { content: " – kampfunfähig"; font-weight: 400; font-size: 0.85rem; color: var(--fumble); }
+.combatant.down h3::after { content: " – down"; font-weight: 400; font-size: 0.85rem; color: var(--fumble); }
 .combatant-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 .combatant-head h3 { margin: 0; font-size: 1.05rem; }
 .combatant-head .spell-meta { margin-top: 2px; }
@@ -917,7 +921,7 @@ footer.attribution a { color: inherit; }
 }
 .init-row.current { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--bg)); }
 .init-row.down { opacity: 0.5; }
-.init-row.down .init-name { text-decoration: line-through; }
+.init-row.down .init-name-text { text-decoration: line-through; }
 .init-marker { color: var(--accent); font-size: 0.8rem; text-align: center; }
 .init-name {
   min-width: 0;
@@ -925,12 +929,13 @@ footer.attribution a { color: inherit; }
   background: transparent;
   text-align: left;
   font-weight: 600;
-  padding: 6px 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  padding: 3px 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
 }
-.init-name small { font-weight: 400; color: var(--muted); font-size: 0.72rem; margin-left: 4px; }
+.init-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.init-name small { font-weight: 400; color: var(--muted); font-size: 0.7rem; }
 .init-row.player .init-name small { color: var(--crit); }
 .init-value {
   width: 100%;
